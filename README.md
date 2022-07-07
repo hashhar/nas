@@ -361,6 +361,29 @@ To start a stopped service without using any changes:
 docker-compose up --detach --no-recreate
 ```
 
+## Environment Files
+
+We have multiple environment files.
+
+- `.env`: Contains variables we want to reference in the `docker-compose.yml`
+  but not add to containers. Useful for extracting common paths and reusable
+  values.
+- `<service>/secrets.env`: Contains per-service environment variables injected
+  into containers using `env_file` in `docker-compose.yml`. Useful for secrets.
+  ***Define non-secret environment variables applicable to a single container
+  using `environment` in `docker-compose.yml`.***
+
+# Special Instructions
+
+Some containers need a bit of manual setup which is described below.
+
+## Caddy
+
+Caddy requires some secrets to work. Make sure the following variables have values defined in `caddy/secrets.env`:
+
+- `CF_API_TOKEN`: Cloudflare API token with read permissions for `Zone.Zone`
+  and edit permissions for `Zone.DNS`.
+
 # Inspiration
 
 A lot of the content in this setup came from the following sources in no

@@ -1,0 +1,33 @@
+{
+	# acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+	# debug
+	email hashhar_dev@outlook.com
+}
+
+(proxy-host) {
+	@{args.0} host {args.0}.nas.hashhar.com
+	reverse_proxy @{args.0} {args.1}
+}
+
+*.nas.hashhar.com, nas.hashhar.com {
+	log
+
+	tls {
+		dns cloudflare {env.CF_API_TOKEN}
+		resolvers 1.1.1.1
+	}
+
+	map {labels.3} {known} {online} {
+		default "no" "no"
+	}
+
+	route {
+		@unknown expression `{known} == "no"`
+		respond @unknown "Unknown service: {labels.3}" 404
+
+		@offline expression `{online} == "no"`
+		respond @offline "Service {labels.3} temporarily unavailable, please try again after some time" 502
+	}
+
+	metrics /metrics
+}

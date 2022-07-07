@@ -1,0 +1,34 @@
+services:
+  caddy:
+    build:
+      context: caddy
+      args:
+        - VERSION=2.5.1
+    image: hashhar/caddy:2.5.1-0
+    container_name: caddy
+    env_file:
+      - caddy/secrets.env
+    volumes:
+      - $DOCKER_DATA/caddy/data:/data
+      - $DOCKER_DATA/caddy/config:/config
+    networks:
+      # x.x.x.3 to match last octet to IP of Synology for easy remembering
+      macvlan:
+        ipv4_address: "192.168.2.3"
+      bridge:
+        ipv4_address: "172.18.0.3"
+    restart: unless-stopped
+
+networks:
+  macvlan:
+    driver: macvlan
+    driver_opts:
+      parent: eth0
+    ipam:
+      config:
+        - subnet: "192.168.2.0/24"
+  bridge:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: "172.18.0.0/16"
