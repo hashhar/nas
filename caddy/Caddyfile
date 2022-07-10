@@ -18,6 +18,8 @@
 	}
 
 	map {labels.3} {known} {online} {
+		plex "yes" "yes"
+
 		default "no" "no"
 	}
 
@@ -27,6 +29,8 @@
 
 		@offline expression `{online} == "no"`
 		respond @offline "Service {labels.3} temporarily unavailable, please try again after some time" 502
+
+		import proxy-host "plex" "http://plex:{$PLEX_PORT}"
 	}
 
 	metrics /metrics

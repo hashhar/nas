@@ -372,6 +372,10 @@ We have multiple environment files.
   into containers using `env_file` in `docker-compose.yml`. Useful for secrets.
   ***Define non-secret environment variables applicable to a single container
   using `environment` in `docker-compose.yml`.***
+- `shared.env`: Contains environment variables injected into multiple
+  containers. An example of when this might be useful is if you want to ensure
+  that the same port is used in the Caddyfile as well a container's
+  configuration.
 
 # Special Instructions
 
@@ -383,6 +387,31 @@ Caddy requires some secrets to work. Make sure the following variables have valu
 
 - `CF_API_TOKEN`: Cloudflare API token with read permissions for `Zone.Zone`
   and edit permissions for `Zone.DNS`.
+
+## Plex
+
+When Plex runs using a bridge network it incorrectly identifies LAN traffic as
+coming from internet and doesn't allow to finish Plex Media Server setup.
+
+Synology doesn't allow TCP forwarding on SSH for any user other than `root` or
+`admin`. So we will temporarily re-enable the default `admin` user to create a
+SSH tunnel.
+
+If Synology is exposed outside the LAN then make sure to limit access before
+re-enabling the default `admin` for security.
+
+- Re-enable default `admin` user.
+- Expose port `32400` from the Plex container.
+- Create a SSH tunnel as `ssh <server> -L 32400:127.0.0.1:32400`.
+- Access Plex at `http://localhost:32400/web` and finish the server setup to claim Plex.
+- Close the SSH tunnel and disable the default `admin` account.
+
+See more at:
+- [Plex Support][plex-installation]
+- [Plex Docker image docs][plex-docker-docs]
+
+[plex-installation]: https://support.plex.tv/articles/200288586/#toc-2
+[plex-docker-docs]: https://github.com/plexinc/pms-docker#running-on-a-headless-server-with-container-using-host-networking
 
 # Inspiration
 

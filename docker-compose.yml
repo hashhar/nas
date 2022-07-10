@@ -4,10 +4,11 @@ services:
       context: caddy
       args:
         - VERSION=2.5.1
-    image: hashhar/caddy:2.5.1-0
+    image: hashhar/caddy:2.5.1-1
     container_name: caddy
     env_file:
       - caddy/secrets.env
+      - shared.env
     volumes:
       - $DOCKER_DATA/caddy/data:/data
       - $DOCKER_DATA/caddy/config:/config
@@ -17,6 +18,29 @@ services:
         ipv4_address: "192.168.2.3"
       bridge:
         ipv4_address: "172.18.0.3"
+    restart: unless-stopped
+
+  plex:
+    depends_on:
+      - caddy
+    image: lscr.io/linuxserver/plex:latest
+    container_name: plex
+    environment:
+      - PUID=$PLEX_UID
+      - PGID=$PLEX_GID
+      - TZ=$TZ
+      - VERSION=docker
+    volumes:
+      - $DOCKER_DATA/plex/config:/config
+      - $DOCKER_DATA/plex/transcode:/transcode
+      - $DATA_ROOT/Media:$DATA_ROOT/Media:ro # read-only (will prevent us from deleting things from the UI)
+    networks:
+      bridge:
+    ports:
+      # See list of ports at https://support.plex.tv/articles/201543147
+      # Plex Media Server port is not exposed - reachable via caddy
+      - "32410-32414:32410-32414/udp" # GDM network discovery
+      - "32469:32469" # DLNA server
     restart: unless-stopped
 
 networks:
