@@ -19,6 +19,7 @@
 
 	map {labels.3} {known} {online} {
 		plex "yes" "yes"
+		qbittorrent "yes" "yes"
 
 		default "no" "no"
 	}
@@ -31,6 +32,7 @@
 		respond @offline "Service {labels.3} temporarily unavailable, please try again after some time" 502
 
 		import proxy-host "plex" "http://plex:{$PLEX_PORT}"
+		import proxy-host "qbittorrent" "http://qbittorrent:{$QBITTORRENT_PORT}"
 	}
 
 	metrics /metrics

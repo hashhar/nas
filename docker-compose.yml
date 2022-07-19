@@ -4,7 +4,7 @@ services:
       context: caddy
       args:
         - VERSION=2.5.1
-    image: hashhar/caddy:2.5.1-1
+    image: hashhar/caddy:2.5.1-2
     container_name: caddy
     env_file:
       - caddy/secrets.env
@@ -41,6 +41,34 @@ services:
       # Plex Media Server port is not exposed - reachable via caddy
       - "32410-32414:32410-32414/udp" # GDM network discovery
       - "32469:32469" # DLNA server
+    restart: unless-stopped
+
+  qbittorrent:
+    depends_on:
+      - caddy
+    build:
+      context: qbittorrent
+      args:
+        - VERSION=4.4.3
+        - LISTENING_PORT=$QBITTORRENT_LISTENING_PORT
+        - DATA_ROOT
+    image: hashhar/qbittorrent:4.4.3-0
+    container_name: qbittorrent
+    environment:
+      - PUID=$QBITTORRENT_UID
+      - PGID=$QBITTORRENT_GID
+      - TZ=$TZ
+      - WEBUI_PORT=$QBITTORRENT_PORT
+    volumes:
+      - $DATA_ROOT/Staging:$DATA_ROOT/Staging
+      - type: bind
+        source: $DOCKER_DATA/qbittorrent/config
+        target: /config
+    networks:
+      bridge:
+    ports:
+      - "$QBITTORRENT_LISTENING_PORT:$QBITTORRENT_LISTENING_PORT"
+      - "$QBITTORRENT_LISTENING_PORT:$QBITTORRENT_LISTENING_PORT/udp"
     restart: unless-stopped
 
 networks:

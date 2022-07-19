@@ -1,0 +1,19 @@
+#!/usr/bin/with-contenv bash
+
+# DEFAULT_CONFIG is set in container's env
+DEFAULT_CONFIG="${DEFAULT_CONFIG:?Expected DEFAULT_CONFIG env var to be set and not empty}"
+CONFIG=/config/qBittorrent
+
+set -e
+
+# Backup directory if it exists
+if [ -d "${CONFIG}" ]; then
+  backup_dir="/config/backup-$(date +%FT%T)" \
+    && echo "Backing up existing config to ${backup_dir}" \
+    && mkdir -p "${backup_dir}" \
+    && cp -rv "${CONFIG}/." "${backup_dir}/"
+fi
+
+# Overwrite using the default config
+echo "Overwriting existing config with the default"
+cp -rv "${DEFAULT_CONFIG}/." "${CONFIG}/"

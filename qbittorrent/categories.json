@@ -1,0 +1,17 @@
+{
+	"Books": {
+		"save_path": ""
+	},
+	"Comics": {
+		"save_path": ""
+	},
+	"Movies": {
+		"save_path": ""
+	},
+	"Music": {
+		"save_path": ""
+	},
+	"TV": {
+		"save_path": ""
+	}
+}
