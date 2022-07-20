@@ -20,6 +20,7 @@
 	map {labels.3} {known} {online} {
 		plex "yes" "yes"
 		qbittorrent "yes" "yes"
+		syncthing "yes" "yes"
 
 		default "no" "no"
 	}
@@ -33,6 +34,8 @@
 
 		import proxy-host "plex" "http://plex:{$PLEX_PORT}"
 		import proxy-host "qbittorrent" "http://qbittorrent:{$QBITTORRENT_PORT}"
+		# syncthing is using host networking so we connect to the host itself
+		import proxy-host "syncthing" "http://{$HOST_ADDRESS}:{$SYNCTHING_PORT}"
 	}
 
 	metrics /metrics

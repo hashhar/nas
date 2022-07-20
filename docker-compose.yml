@@ -4,11 +4,11 @@ services:
       context: caddy
       args:
         - VERSION=2.5.1
-    image: hashhar/caddy:2.5.1-2
+    image: hashhar/caddy:2.5.1-3
     container_name: caddy
     env_file:
-      - caddy/secrets.env
       - shared.env
+      - caddy/secrets.env
     volumes:
       - $DOCKER_DATA/caddy/data:/data
       - $DOCKER_DATA/caddy/config:/config
@@ -69,6 +69,23 @@ services:
     ports:
       - "$QBITTORRENT_LISTENING_PORT:$QBITTORRENT_LISTENING_PORT"
       - "$QBITTORRENT_LISTENING_PORT:$QBITTORRENT_LISTENING_PORT/udp"
+    restart: unless-stopped
+
+  syncthing:
+    depends_on:
+      - caddy
+    image: syncthing/syncthing:latest
+    container_name: syncthing
+    hostname: Radon # name of syncthing instance
+    environment:
+      - PUID=$SYNCTHING_UID
+      - PGID=$SYNCTHING_GID
+      - TZ=$TZ
+    volumes:
+      - $DOCKER_DATA/syncthing:/var/syncthing
+      - $DATA_ROOT/Personal/Pictures/Synced:$DATA_ROOT/Personal/Pictures/Synced
+    network_mode: "host" # required for local discovery to work
+    # Uses ports 8384 (UI), 22000/tcp,udp (file transfer) and 21027/udp (local discovery)
     restart: unless-stopped
 
 networks:

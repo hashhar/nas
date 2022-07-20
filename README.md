@@ -71,6 +71,7 @@ Clone the `default` firewall profile, name it `secure` and add following rules:
 | ✅ | Windows file server, WS-Discovery | 192.168.1.0/24 | Allow |
 | ✅ | HTTP, HTTPS | 192.168.1.0/24 | Allow |
 | ✅ | Synology Assistant | All | Allow |
+| ✅ | 22000,21027 | All | Allow |
 | ✅ | All | 192.168.2.0/24 | Allow |
 | ✅ | All | 172.18.0.0/16 | Allow |
 | ✅ | All | 172.16.0.0/12 | Allow |
@@ -387,6 +388,9 @@ Caddy requires some secrets to work. Make sure the following variables have valu
 
 - `CF_API_TOKEN`: Cloudflare API token with read permissions for `Zone.Zone`
   and edit permissions for `Zone.DNS`.
+- `HOST_ADDRESS`: Some containers use host networking. This means that to proxy
+  requests to them we need to use the address of the NAS. Set this to a DNS
+  name which resolves to the NAS's IP or the IP address itself.
 
 ## Plex
 
@@ -412,6 +416,19 @@ See more at:
 
 [plex-installation]: https://support.plex.tv/articles/200288586/#toc-2
 [plex-docker-docs]: https://github.com/plexinc/pms-docker#running-on-a-headless-server-with-container-using-host-networking
+
+## Syncthing
+
+Syncthing needs to use host networking for local discovery to work. So
+Syncthing container's network mode is set to host and we use a DNS name
+pointing to the NAS host (the IP address can be used as well) as the reverse
+proxy target in Caddy.
+
+Since Syncthing uses host network we also need to make sure firewall rules
+exist to allow connections to 22000/tcp, 22000/udp (data transfer) and
+21027/udp (local discovery) from all IP addresses.
+
+Make sure to enable authentication on the web UI.
 
 # Inspiration
 
