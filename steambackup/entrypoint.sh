@@ -37,7 +37,7 @@ usage() {
     printf '%s\n'       "    Sync:      ${SYNC_CMD[*]}"
 }
 
-[[ $# -eq 0 ]] && usage
+[[ $# -eq 0 ]] && { usage; exit 1; }
 while [[ $# -gt 0 ]]; do
     case $1 in
         --steam-library)
