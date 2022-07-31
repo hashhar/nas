@@ -71,6 +71,7 @@ def group_manifests_by_install_dir(
 ) -> Dict[pathlib.Path, List[AppManifest]]:
     grouped_manifests: Dict[pathlib.Path, List[AppManifest]] = {}
     for manifest in manifests:
+        print(manifest.install_dir)
         grouped_manifests.setdefault(pathlib.Path(manifest.install_dir), []).append(
             manifest
         )
