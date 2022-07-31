@@ -23,11 +23,11 @@ def loads_as_obj(data: str) -> AppManifest:
     """
     parsed = loads(data)
     return AppManifest(
-        name=parsed["name"],
-        install_dir=parsed["installdir"],
-        size_on_disk=parsed["SizeOnDisk"],
-        build_id=parsed["buildid"],
-        download_size=parsed["BytesDownloaded"],
+        name=parsed["AppState"]["name"],
+        install_dir=parsed["AppState"]["installdir"],
+        size_on_disk=parsed["AppState"]["SizeOnDisk"],
+        build_id=parsed["AppState"]["buildid"],
+        download_size=parsed["AppState"]["BytesDownloaded"],
     )
 
 
