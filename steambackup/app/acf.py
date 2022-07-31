@@ -26,12 +26,14 @@ def loads_as_obj(data: str) -> AppManifest:
         return AppManifest(
             name=parsed["AppState"]["name"],
             install_dir=parsed["AppState"]["installdir"],
-            size_on_disk=parsed["AppState"]["SizeOnDisk"],
-            build_id=parsed["AppState"]["buildid"],
-            download_size=parsed["AppState"]["BytesDownloaded"],
+            build_id=parsed["AppState"].get("buildid"),
+            size_on_disk=parsed["AppState"].get("SizeOnDisk"),
+            download_size=parsed["AppState"].get("BytesDownloaded"),
         )
     except Exception:
-        raise Exception(f"Failed while converting {parsed} to AppManifest")
+        raise Exception(
+            f"Failed while converting to AppManifest, parsed object was: {parsed}"
+        )
 
 
 def loads(data: str) -> Dict[str, Any]:
