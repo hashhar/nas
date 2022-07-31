@@ -61,7 +61,7 @@ def parse_arguments() -> Arguments:
 
 
 def get_manifests(steam_library: pathlib.Path) -> Iterator[AppManifest]:
-    for manifest_path in steam_library.glob("*.acf"):
+    for manifest_path in steam_library.glob("steamapps/*.acf"):
         with open(manifest_path, encoding="utf-8") as manifest_file:
             yield acf.load_as_obj(manifest_file)
 
