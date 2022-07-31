@@ -60,14 +60,18 @@ while [[ $# -gt 0 ]]; do
 done
 
 APP_MANIFESTS=()
-
 discover_games() {
     for manifest in "${STEAM_LIBRARY_PATH}"/steamapps/*.acf; do
         APP_MANIFESTS+=( "$manifest" )
     done
 }
 
+declare -A INSTALLDIR_MANIFESTS_MAP
+map_installdir_to_manifests() {
+    # Each installdir can be present in multiple manifests (e.g. both 9050 and
+    # 9070 have installdir as "Doom 3")
+    # So we create a map of installdir => delimited list of manifest files
+    for manifest in "${APP_MANIFESTS"
+}
+
 discover_games
-for f in "${APP_MANIFESTS[@]}"; do
-    echo $f
-done
