@@ -7,7 +7,7 @@ from typing import Any, Dict, Iterator, List, NamedTuple
 import acf
 import os.path
 
-from steambackup.app.acf import AppManifest
+from acf import AppManifest
 
 
 class Arguments(NamedTuple):
