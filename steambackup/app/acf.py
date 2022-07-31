@@ -22,13 +22,16 @@ def loads_as_obj(data: str) -> AppManifest:
     :return: An AppManifest object with ACF data.
     """
     parsed = loads(data)
-    return AppManifest(
-        name=parsed["AppState"]["name"],
-        install_dir=parsed["AppState"]["installdir"],
-        size_on_disk=parsed["AppState"]["SizeOnDisk"],
-        build_id=parsed["AppState"]["buildid"],
-        download_size=parsed["AppState"]["BytesDownloaded"],
-    )
+    try:
+        return AppManifest(
+            name=parsed["AppState"]["name"],
+            install_dir=parsed["AppState"]["installdir"],
+            size_on_disk=parsed["AppState"]["SizeOnDisk"],
+            build_id=parsed["AppState"]["buildid"],
+            download_size=parsed["AppState"]["BytesDownloaded"],
+        )
+    except Exception:
+        raise Exception(f"Failed while converting {parsed} to AppManifest")
 
 
 def loads(data: str) -> Dict[str, Any]:
