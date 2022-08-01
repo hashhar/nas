@@ -119,7 +119,6 @@ class Job:
         self._destination = backup_dir.with_name(install_dir.name).resolve()
 
         self._manifests: Union[List[AppManifest], None] = None
-        return self
 
     def add_manifest(self, manifest: AppManifest) -> None:
         if self._manifests is None:
