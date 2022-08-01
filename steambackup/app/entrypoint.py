@@ -124,7 +124,7 @@ class Job:
         self._manifests: Union[List[AppManifest], None] = None
 
     def __str__(self) -> str:
-        source_str = "', '".join(str(self.sources))
+        source_str = "', '".join([str(source) for source in self.sources])
         return f"{self._mode} '{source_str}' to '{self.destination}'"
 
     def __repr__(self) -> str:
