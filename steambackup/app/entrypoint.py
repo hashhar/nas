@@ -121,6 +121,9 @@ class Job:
     def __str__(self) -> str:
         return f"{self._mode} '{self.source}' to '{self.destination}'"
 
+    def __repr__(self) -> str:
+        return self.__str__()
+
     def add_manifest(self, manifest: AppManifest) -> None:
         if self._manifests is None:
             self._manifests = []
