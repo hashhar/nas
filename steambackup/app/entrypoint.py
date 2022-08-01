@@ -125,7 +125,7 @@ class Job:
 
     def __str__(self) -> str:
         source_str = "', '".join([str(source) for source in self.sources])
-        return f"{self._mode} '{source_str}' to '{self.destination}'"
+        return f"{self._mode} ['{source_str}'] to '{self.destination}'"
 
     def __repr__(self) -> str:
         return self.__str__()
