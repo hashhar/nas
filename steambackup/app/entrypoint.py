@@ -84,7 +84,7 @@ class SteamApp:
         return self._manifests
 
     @property
-    def sha256(self) -> bytes:
+    def sha256(self) -> str:
         hasher = hashlib.sha256()
         sorted_manifest_paths = sorted(
             manifest.manifest_path for manifest in self.manifests
@@ -92,7 +92,7 @@ class SteamApp:
         for manifest_path in sorted_manifest_paths:
             hasher.update(manifest_path.read_bytes())
 
-        return hasher.digest()
+        return hasher.hexdigest()
 
     def __repr__(self):
         return "%s(%s)" % (
