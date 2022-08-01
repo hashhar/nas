@@ -95,9 +95,9 @@ class SteamApp:
         return hasher.digest()
 
     def __repr__(self):
-        return '%s(%s)' % (
+        return "%s(%s)" % (
             type(self).__name__,
-            ', '.join("%r=%r" % item for item in vars(self).items())
+            ", ".join("%s=%r" % item for item in vars(self).items()),
         )
 
 
