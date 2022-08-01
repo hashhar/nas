@@ -28,7 +28,7 @@ def parse_arguments() -> Arguments:
             return path
         else:
             logging.error("%s is not a dictionary or does not exist", arg)
-            raise TypeError(f"{arg} is not a directory or does not exist")
+            raise TypeError()
 
     def is_steam_library(arg: str) -> Path:
         steamapps_path = Path(arg, STEAMAPPS_DIRECTORY)
@@ -40,9 +40,7 @@ def parse_arguments() -> Arguments:
                 arg,
                 STEAMAPPS_DIRECTORY,
             )
-            raise TypeError(
-                f"{arg} does not have a {STEAMAPPS_DIRECTORY} directory or does not exist"
-            )
+            raise TypeError()
 
     parser = argparse.ArgumentParser(description="Backup Steam library")
     parser.add_argument(
@@ -114,23 +112,20 @@ class Job:
         self._mode = mode
         self._source = Path(
             steam_library, STEAMAPPS_DIRECTORY, INSTALL_DIRECTORY_BASE, install_dir
-        ).resolve()
-
-        self._destination = Path(backup_dir, install_dir.name).resolve()
-
+        )
+        self._destination = Path(backup_dir, install_dir.name).with_suffix(
+            self.SEVEN_Z_SUFFIX
+        )
         self._manifests: Union[List[AppManifest], None] = None
 
     def __str__(self) -> str:
-        return f"{self._mode} '{self.source}' -> '{self.destination}'"
+        return f"{self._mode} '{self.source}' to '{self.destination}'"
 
     def add_manifest(self, manifest: AppManifest) -> None:
         if self._manifests is None:
             self._manifests = []
 
         self._manifests.append(manifest)
-        self._destination = self._destination.with_name(
-            self._destination.name + "_" + str(manifest.app_id)
-        ).resolve()
 
     @property
     def source(self) -> Path:
@@ -143,17 +138,14 @@ class Job:
     @property
     def command(self) -> List[str]:
         additional_args = [
-            str(self.source.resolve()),
-            str(self.destination.with_suffix(self.SEVEN_Z_SUFFIX).resolve()),
+            str(self.source),
+            str(self.destination),
         ]
         if self._mode == MODE_SYNC:
             return self.sync_args + additional_args
         elif self._mode == MODE_OVERWRITE:
             return self.overwrite_args + additional_args
         else:
-            logging.error(
-                "Expected mode to be one of %s or %s", MODE_SYNC, MODE_OVERWRITE
-            )
             raise RuntimeError(
                 f"Expected mode to be one of {MODE_SYNC} or {MODE_OVERWRITE}"
             )
@@ -167,10 +159,10 @@ def build_jobs(
 ) -> List[Job]:
     jobs: List[Job] = []
     for install_dir in manifests_by_install_dir:
-        logging.info("Creating job for install dir: %s", install_dir)
+        logging.info("Creating job for directory: %s", install_dir)
         job = Job(mode, steam_library, install_dir, backup_dir)
         for manifest in manifests_by_install_dir[install_dir]:
-            logging.debug("Adding manifest %s to job %s", manifest, job)
+            logging.debug("Adding manifest to job: %s", manifest)
             job.add_manifest(manifest)
 
         logging.info("Created job: %s", job)
