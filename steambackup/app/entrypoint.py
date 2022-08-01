@@ -94,6 +94,10 @@ class SteamApp:
 
         return hasher.digest()
 
+    def __repr__(self):
+        repr_fmt = '(' + ', '.join(f'{name}=%r' for name in vars(self)) + ')'
+        return self.__class__.__name__ + repr_fmt % self
+
 
 def get_steam_apps(steam_library: Path) -> List[SteamApp]:
     apps_by_install_dir: Dict[Path, SteamApp] = {}
