@@ -1,10 +1,16 @@
-__all__ = ("load", "loads")
+__all__ = ("load", "loads", "load_as_obj", "loads_as_obj")
 
 from typing import Any, Dict, List, NamedTuple, TextIO
 
-
 SECTION_START = "{"
 SECTION_END = "}"
+
+APP_STATE_KEY = "AppState"
+NAME_KEY = "name"
+INSTALL_DIR_KEY = "installdir"
+SIZE_ON_DISK_KEY = "SizeOnDisk"
+BUILD_ID_KEY = "buildid"
+DOWNLOAD_SIZE_KEY = "BytesDownloaded"
 
 
 class AppManifest(NamedTuple):
@@ -23,13 +29,17 @@ def loads_as_obj(data: str) -> AppManifest:
     """
     parsed = loads(data)
     try:
-        return AppManifest(
-            name=parsed["AppState"]["name"],
-            install_dir=parsed["AppState"]["installdir"],
-            build_id=parsed["AppState"].get("buildid"),
-            size_on_disk=parsed["AppState"].get("SizeOnDisk"),
-            download_size=parsed["AppState"].get("BytesDownloaded"),
-        )
+        if APP_STATE_KEY in parsed:
+            app_state = parsed[APP_STATE_KEY]
+            return AppManifest(
+                name=app_state.get(NAME_KEY),
+                install_dir=app_state.get(INSTALL_DIR_KEY),
+                size_on_disk=app_state.get(SIZE_ON_DISK_KEY),
+                build_id=app_state.get(BUILD_ID_KEY),
+                download_size=app_state.get(DOWNLOAD_SIZE_KEY),
+            )
+        else:
+            raise Exception(f"Expected {APP_STATE_KEY} to be present")
     except Exception:
         raise Exception(
             f"Failed while converting to AppManifest, parsed object was: {parsed}"
