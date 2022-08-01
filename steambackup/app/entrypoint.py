@@ -11,6 +11,9 @@ from acf import AppManifest
 STEAMAPPS_DIRECTORY = "steamapps"
 INSTALL_DIRECTORY_BASE = "common"
 
+MODE_SYNC = "sync"
+MODE_OVERWRITE = "overwrite"
+
 
 class Arguments(NamedTuple):
     steam_library: Path
@@ -60,7 +63,7 @@ def parse_arguments() -> Arguments:
         "--mode",
         required=True,
         metavar="MODE",
-        choices=["sync", "overwrite"],
+        choices=[MODE_SYNC, MODE_OVERWRITE],
         help=(
             "sync will update archives if they exist otherwise will create new ones."
             "overwrite will always create new archives and overwrite any existing ones."
@@ -71,6 +74,12 @@ def parse_arguments() -> Arguments:
 
 
 def get_manifests_by_install_dir(steam_library: Path) -> Dict[Path, List[AppManifest]]:
+    """
+    Groups manifests by installation directory.
+
+    Multiple manifests can have the same installation directory e.g. both 9050 and 9070
+    have installdir as "Doom 3".
+    """
     manifests_by_install_dir: Dict[Path, List[AppManifest]] = {}
     for manifest_path in steam_library.glob(STEAMAPPS_DIRECTORY + "/*.acf"):
         with open(manifest_path, encoding="utf-8") as manifest_file:
@@ -85,43 +94,99 @@ def get_manifests_by_install_dir(steam_library: Path) -> Dict[Path, List[AppMani
 
 
 class Job:
-    def __init__(self, steam_library: Path, install_dir: Path, backup_dir: Path):
+    SEVEN_Z_SUFFIX = ".7z"
+    common_args = [
+        "/opt/7z/7zz",
+        "-bs0",
+        "-t7z",
+        "-m0=LZMA2",
+        "-mx=9",
+        "-mmt=on",
+        "-ssw",
+        # "-mmemuse=p70" Uncomment and change if running out of memory
+    ]
+    overwrite_args = common_args + ["a"]
+    sync_args = common_args + ["u", "-up0q0r2x1y2z1w2"]
+
+    def __init__(
+        self, mode: str, steam_library: Path, install_dir: Path, backup_dir: Path
+    ):
+        self._mode = mode
         self._source = Path(
             steam_library, STEAMAPPS_DIRECTORY, INSTALL_DIRECTORY_BASE, install_dir
-        )
+        ).resolve()
 
-        self._backup_dir = backup_dir
-        self._install_dir_name = install_dir.name
+        self._destination = backup_dir.with_name(install_dir.name).resolve()
 
         self._manifests: Union[List[AppManifest], None] = None
         return self
 
-    def add_manifest(self, manifest: AppManifest):
+    def add_manifest(self, manifest: AppManifest) -> None:
         if self._manifests is None:
             self._manifests = []
 
         self._manifests.append(manifest)
+        self._destination = self._destination.with_name(
+            self._destination.name + "_" + str(manifest.app_id)
+        ).resolve()
 
     @property
-    def destination(self):
-        backup_dir = self._backup_dir
-        file_name = self._install_dir_name
-        if self._manifests is None:
-            raise RuntimeError("Expected at-least 1 manifest to exist")
+    def source(self) -> Path:
+        return self._source
 
-        for manifest in self._manifests:
-            file_name += "_" + str(manifest.app_id)
+    @property
+    def destination(self) -> Path:
+        return self._destination
 
-        return Path(backup_dir, file_name)
+    @property
+    def command(self) -> List[str]:
+        additional_args = [
+            str(self.source.resolve()),
+            str(self.destination.with_suffix(self.SEVEN_Z_SUFFIX).resolve()),
+        ]
+        if self._mode == MODE_SYNC:
+            return self.sync_args + additional_args
+        elif self._mode == MODE_OVERWRITE:
+            return self.overwrite_args + additional_args
+        else:
+            logging.error(
+                "Expected mode to be one of %s or %s", MODE_SYNC, MODE_OVERWRITE
+            )
+            raise RuntimeError(
+                f"Expected mode to be one of {MODE_SYNC} or {MODE_OVERWRITE}"
+            )
+
+
+def build_jobs(
+    mode: str,
+    steam_library: Path,
+    backup_dir: Path,
+    manifests_by_install_dir: Dict[Path, List[AppManifest]],
+) -> List[Job]:
+    jobs: List[Job] = []
+    for install_dir in manifests_by_install_dir:
+        logging.info("Creating job for install dir: %s", install_dir)
+        job = Job(mode, steam_library, install_dir, backup_dir)
+        for manifest in manifests_by_install_dir[install_dir]:
+            logging.debug("Adding manifest %s to job %s", manifest, job)
+            job.add_manifest(manifest)
+
+        logging.info("Created job %s for install dir %s", job, install_dir)
+        jobs.append(job)
+
+    return jobs
 
 
 def run() -> None:
     args: Arguments = parse_arguments()
-    print(args)
-    print(
-        get_manifests_by_install_dir(args.steam_library),
+    jobs = build_jobs(
+        args.mode,
+        args.steam_library,
         args.destination,
+        get_manifests_by_install_dir(args.steam_library),
     )
+    for job in jobs:
+        logging.info("Built job: %s", job)
 
 
 if __name__ == "__main__":

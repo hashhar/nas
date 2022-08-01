@@ -96,14 +96,13 @@ def load_as_obj(file: TextIO) -> AppManifest:
     return manifest._replace(manifest_path=Path(file.name))
 
 
-def load(file: TextIO):
+def load(file: TextIO) -> Dict[str, Any]:
     """
     Loads the contents of an ACF file into a Python object.
     :param file: A file object.
     :return: An Ordered Dictionary with ACF data.
     """
-    manifest = loads(file.read())
-    return manifest._replace(manifest_path=Path(file.name))
+    return loads(file.read())
 
 
 def _prepare_subsection(data: Dict[str, Any], sections: List[str]) -> Dict[str, Any]:
