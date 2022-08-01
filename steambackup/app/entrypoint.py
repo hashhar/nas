@@ -116,7 +116,7 @@ class Job:
             steam_library, STEAMAPPS_DIRECTORY, INSTALL_DIRECTORY_BASE, install_dir
         ).resolve()
 
-        self._destination = backup_dir.with_name(install_dir.name).resolve()
+        self._destination = Path(backup_dir, install_dir.name).resolve()
 
         self._manifests: Union[List[AppManifest], None] = None
 
