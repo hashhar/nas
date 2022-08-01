@@ -121,7 +121,7 @@ class Job:
         self._manifests: Union[List[AppManifest], None] = None
 
     def __str__(self) -> str:
-        return " ".join(self.command)
+        return f"{self._mode}: '{self.source}' -> '{self.destination}'"
 
     def add_manifest(self, manifest: AppManifest) -> None:
         if self._manifests is None:
