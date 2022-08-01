@@ -120,6 +120,9 @@ class Job:
 
         self._manifests: Union[List[AppManifest], None] = None
 
+    def __str__(self) -> str:
+        return " ".join(self.command)
+
     def add_manifest(self, manifest: AppManifest) -> None:
         if self._manifests is None:
             self._manifests = []
@@ -131,11 +134,11 @@ class Job:
 
     @property
     def source(self) -> Path:
-        return self._source
+        return self._source.resolve()
 
     @property
     def destination(self) -> Path:
-        return self._destination
+        return self._destination.resolve()
 
     @property
     def command(self) -> List[str]:
@@ -185,7 +188,13 @@ def run() -> None:
         get_manifests_by_install_dir(args.steam_library),
     )
     for job in jobs:
-        logging.info("Built job: %s", job)
+        logging.info(
+            "Built job: %s -> %s, mode=%s, command=%s",
+            job.source,
+            job.destination,
+            job._mode,
+            " ".join(job.command),
+        )
 
 
 if __name__ == "__main__":
