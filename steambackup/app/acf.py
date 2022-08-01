@@ -1,7 +1,7 @@
 __all__ = ("load", "load_as_app_manifest")
 
 from pathlib import Path
-from typing import Any, Dict, List, NamedTuple, TextIO
+from typing import Any, Dict, List, NamedTuple, TextIO, Union
 
 SECTION_START = "{"
 SECTION_END = "}"
@@ -22,7 +22,7 @@ class AppManifest(NamedTuple):
     install_dir: str
     size_on_disk: int
     build_id: int
-    download_size: int
+    download_size: Union[int, None]
 
 
 def load_as_app_manifest(file: TextIO) -> AppManifest:
@@ -35,14 +35,19 @@ def load_as_app_manifest(file: TextIO) -> AppManifest:
     try:
         if APP_STATE_KEY in parsed:
             app_state = parsed[APP_STATE_KEY]
+            download_size = (
+                int(app_state.get(DOWNLOAD_SIZE_KEY))
+                if app_state.get(DOWNLOAD_SIZE_KEY) is not None
+                else None
+            )
             return AppManifest(
                 manifest_path=Path(file.name).resolve(True),
-                app_id=app_state.get(APP_ID_KEY),
+                app_id=int(app_state.get(APP_ID_KEY)),
                 name=app_state.get(NAME_KEY),
                 install_dir=app_state.get(INSTALL_DIR_KEY),
-                size_on_disk=app_state.get(SIZE_ON_DISK_KEY),
-                build_id=app_state.get(BUILD_ID_KEY),
-                download_size=app_state.get(DOWNLOAD_SIZE_KEY),
+                size_on_disk=int(app_state.get(SIZE_ON_DISK_KEY)),
+                build_id=int(app_state.get(BUILD_ID_KEY)),
+                download_size=download_size,
             )
         else:
             raise Exception(f"Expected {APP_STATE_KEY} to be present")
