@@ -120,7 +120,10 @@ def run() -> None:
     apps = get_steam_apps(args.steam_library)
     print(apps)
 
-    print(apps[0].manifests, apps[0].sha256)
+    for app in apps:
+        for manifest in app.manifests:
+            if manifest.app_id == 9050:
+                print(app.manifests, "\n", app.sha256)
 
     # If running in overwrite mode we can avoid processing entire library if either is
     # true:
