@@ -3,9 +3,9 @@
 import argparse
 import logging
 import os.path
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple
-from datetime import datetime
 
 import humanize
 

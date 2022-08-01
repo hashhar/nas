@@ -1,2 +1,12 @@
 # per container secrets env file
 secrets.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv
+venv/
+.mypy_cache/
+
+# VSCode
+.vscode
