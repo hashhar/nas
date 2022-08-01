@@ -3,6 +3,7 @@
 import argparse
 import logging
 from pathlib import Path
+import string
 from typing import Any, Dict, List, NamedTuple, Union
 
 import acf
@@ -110,29 +111,38 @@ class Job:
         self, mode: str, steam_library: Path, install_dir: Path, backup_dir: Path
     ):
         self._mode = mode
-        self._source = Path(
-            steam_library, STEAMAPPS_DIRECTORY, INSTALL_DIRECTORY_BASE, install_dir
-        )
+        # list of files to add to archive
+        self._sources: List[Path] = [
+            Path(
+                steam_library, STEAMAPPS_DIRECTORY, INSTALL_DIRECTORY_BASE, install_dir
+            )
+        ]
+        # path to archive
         self._destination = Path(backup_dir, install_dir.name).with_suffix(
             self.SEVEN_Z_SUFFIX
         )
         self._manifests: Union[List[AppManifest], None] = None
 
     def __str__(self) -> str:
-        return f"{self._mode} '{self.source}' to '{self.destination}'"
+        source_str = "', '".join(str(self.sources))
+        return f"{self._mode} '{source_str}' to '{self.destination}'"
 
     def __repr__(self) -> str:
         return self.__str__()
 
-    def add_manifest(self, manifest: AppManifest) -> None:
+    def add_manifest(self, manifest: AppManifest):
         if self._manifests is None:
             self._manifests = []
 
         self._manifests.append(manifest)
+        if manifest.manifest_path is not None:
+            self._sources.append(manifest.manifest_path)
+        else:
+            raise RuntimeError(f"Didn't expected manifest without path: {manifest}")
 
     @property
-    def source(self) -> Path:
-        return self._source.resolve()
+    def sources(self) -> List[Path]:
+        return [path.resolve() for path in self._sources]
 
     @property
     def destination(self) -> Path:
@@ -140,9 +150,10 @@ class Job:
 
     @property
     def command(self) -> List[str]:
+        # 7z archive.7z file1 file2 file3 ...
         additional_args = [
-            str(self.source),
             str(self.destination),
+            *[str(source) for source in self.sources],
         ]
         if self._mode == MODE_SYNC:
             return self.sync_args + additional_args
