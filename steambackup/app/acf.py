@@ -1,11 +1,13 @@
 __all__ = ("load", "loads", "load_as_obj", "loads_as_obj")
 
-from typing import Any, Dict, List, NamedTuple, TextIO
+from pathlib import Path
+from typing import Any, Dict, List, NamedTuple, TextIO, Union
 
 SECTION_START = "{"
 SECTION_END = "}"
 
 APP_STATE_KEY = "AppState"
+APP_ID_KEY = "appid"
 NAME_KEY = "name"
 INSTALL_DIR_KEY = "installdir"
 SIZE_ON_DISK_KEY = "SizeOnDisk"
@@ -14,11 +16,14 @@ DOWNLOAD_SIZE_KEY = "BytesDownloaded"
 
 
 class AppManifest(NamedTuple):
+    app_id: int
     name: str
     install_dir: str
     size_on_disk: int
     build_id: int
     download_size: int
+    # Path to the file from which the manifest was read
+    manifest_path: Union[Path, None] = None
 
 
 def loads_as_obj(data: str) -> AppManifest:
@@ -32,6 +37,7 @@ def loads_as_obj(data: str) -> AppManifest:
         if APP_STATE_KEY in parsed:
             app_state = parsed[APP_STATE_KEY]
             return AppManifest(
+                app_id=app_state.get(APP_ID_KEY),
                 name=app_state.get(NAME_KEY),
                 install_dir=app_state.get(INSTALL_DIR_KEY),
                 size_on_disk=app_state.get(SIZE_ON_DISK_KEY),
@@ -86,7 +92,8 @@ def load_as_obj(file: TextIO) -> AppManifest:
     :param file: A file object.
     :return: An AppManifest object with ACF data.
     """
-    return loads_as_obj(file.read())
+    manifest = loads_as_obj(file.read())
+    return manifest._replace(manifest_path=Path(file.name))
 
 
 def load(file: TextIO):
@@ -95,7 +102,8 @@ def load(file: TextIO):
     :param file: A file object.
     :return: An Ordered Dictionary with ACF data.
     """
-    return loads(file.read())
+    manifest = loads(file.read())
+    return manifest._replace(manifest_path=Path(file.name))
 
 
 def _prepare_subsection(data: Dict[str, Any], sections: List[str]) -> Dict[str, Any]:

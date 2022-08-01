@@ -2,12 +2,8 @@
 
 import argparse
 import logging
-import os.path
-from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, NamedTuple
-
-import humanize
+from typing import Any, Dict, List, NamedTuple, Union
 
 import acf
 from acf import AppManifest
@@ -24,16 +20,23 @@ class Arguments(NamedTuple):
 
 def parse_arguments() -> Arguments:
     def directory_exists(arg: str) -> Path:
-        if os.path.exists(arg) and os.path.isdir(arg):
-            return Path(arg)
+        path = Path(arg)
+        if path.exists() and path.is_dir():
+            return path
         else:
+            logging.error("%s is not a dictionary or does not exist", arg)
             raise TypeError(f"{arg} is not a directory or does not exist")
 
     def is_steam_library(arg: str) -> Path:
         path = Path(arg, STEAMAPPS_DIRECTORY)
-        if os.path.exists(path) and os.path.isdir(path):
-            return Path(arg)
+        if path.exists() and path.is_dir():
+            return path
         else:
+            logging.error(
+                "%s does not have a %s directory or does not exist",
+                arg,
+                STEAMAPPS_DIRECTORY,
+            )
             raise TypeError(
                 f"{arg} does not have a {STEAMAPPS_DIRECTORY} directory or does not exist"
             )
@@ -67,45 +70,59 @@ def parse_arguments() -> Arguments:
     return Arguments(**parsed)
 
 
-def get_manifests(steam_library: Path) -> List[AppManifest]:
-    manifests: List[AppManifest] = []
+def get_manifests_by_install_dir(steam_library: Path) -> Dict[Path, List[AppManifest]]:
+    manifests_by_install_dir: Dict[Path, List[AppManifest]] = {}
     for manifest_path in steam_library.glob("steamapps/*.acf"):
         with open(manifest_path, encoding="utf-8") as manifest_file:
-            manifests.append(acf.load_as_obj(manifest_file))
+            logging.debug("Parsing ACF file: %s", manifest_path)
+            manifest = acf.load_as_obj(manifest_file)
+            logging.debug("Parsed ACF file %s as: %s", manifest_path, manifest)
+            manifests_by_install_dir.setdefault(Path(manifest.install_dir), []).append(
+                manifest
+            )
 
-    return manifests
+    return manifests_by_install_dir
 
 
-def group_manifests_by_install_dir(
-    steam_library: Path,
-    manifests: List[AppManifest],
-) -> Dict[Path, List[AppManifest]]:
-    grouped_manifests: Dict[Path, List[AppManifest]] = {}
-    for manifest in manifests:
-        grouped_manifests.setdefault(
-            Path(
-                steam_library,
-                STEAMAPPS_DIRECTORY,
-                INSTALL_DIRECTORY_BASE,
-                manifest.install_dir,
-            ),
-            [],
-        ).append(manifest)
+class Job:
+    def __init__(self, steam_library: Path, install_dir: Path, backup_dir: Path):
+        self._source = Path(
+            steam_library, STEAMAPPS_DIRECTORY, INSTALL_DIRECTORY_BASE, install_dir
+        )
 
-    return grouped_manifests
+        self._backup_dir = backup_dir
+        self._install_dir_name = install_dir.name
+
+        self._manifests: Union[List[AppManifest], None] = None
+        return self
+
+    def add_manifest(self, manifest: AppManifest):
+        if self._manifests is None:
+            self._manifests = []
+
+        self._manifests.append(manifest)
+
+    @property
+    def destination(self):
+        backup_dir = self._backup_dir
+        file_name = self._install_dir_name
+        if self._manifests is None:
+            raise RuntimeError("Expected at-least 1 manifest to exist")
+
+        for manifest in self._manifests:
+            file_name += "_" + str(manifest.app_id)
+
+        return Path(backup_dir, file_name)
 
 
 def run() -> None:
     args: Arguments = parse_arguments()
-    start = datetime.utcnow()
     print(
-        group_manifests_by_install_dir(
-            args.steam_library, get_manifests(args.steam_library)
-        )
+        get_manifests_by_install_dir(args.steam_library),
+        args.destination,
     )
-    print(humanize.precisedelta(datetime.utcnow() - start))
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
     run()
