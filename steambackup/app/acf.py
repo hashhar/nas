@@ -1,7 +1,7 @@
-__all__ = ("load", "loads", "load_as_obj", "loads_as_obj")
+__all__ = ("load", "load_as_app_manifest")
 
 from pathlib import Path
-from typing import Any, Dict, List, NamedTuple, TextIO, Union
+from typing import Any, Dict, List, NamedTuple, TextIO
 
 SECTION_START = "{"
 SECTION_END = "}"
@@ -16,27 +16,27 @@ DOWNLOAD_SIZE_KEY = "BytesDownloaded"
 
 
 class AppManifest(NamedTuple):
+    manifest_path: Path
     app_id: int
     name: str
     install_dir: str
     size_on_disk: int
     build_id: int
     download_size: int
-    # Path to the file from which the manifest was read
-    manifest_path: Union[Path, None] = None
 
 
-def loads_as_obj(data: str) -> AppManifest:
+def load_as_app_manifest(file: TextIO) -> AppManifest:
     """
-    Loads ACF content into an AppManifest object.
-    :param data: An UTF-8 encoded content of an ACF file.
+    Loads the contents of an ACF file into an AppManifest object.
+    :param file: A file object.
     :return: An AppManifest object with ACF data.
     """
-    parsed = loads(data)
+    parsed = load(file)
     try:
         if APP_STATE_KEY in parsed:
             app_state = parsed[APP_STATE_KEY]
             return AppManifest(
+                manifest_path=Path(file.name).resolve(True),
                 app_id=app_state.get(APP_ID_KEY),
                 name=app_state.get(NAME_KEY),
                 install_dir=app_state.get(INSTALL_DIR_KEY),
@@ -52,17 +52,17 @@ def loads_as_obj(data: str) -> AppManifest:
         )
 
 
-def loads(data: str) -> Dict[str, Any]:
+def load(file: TextIO) -> Dict[str, Any]:
     """
-    Loads ACF content into a Python object.
-    :param data: An UTF-8 encoded content of an ACF file.
-    :return: A dictionary with ACF data.
+    Loads the contents of an ACF file into a Python object.
+    :param file: A file object.
+    :return: An Ordered Dictionary with ACF data.
     """
     parsed: Dict[str, Any] = {}
     current_section = parsed
     sections: List[str] = []
 
-    lines = (line.strip() for line in data.splitlines())
+    lines = (line.strip() for line in file.read().splitlines())
 
     for line in lines:
         try:
@@ -84,25 +84,6 @@ def loads(data: str) -> Dict[str, Any]:
         current_section[key] = value
 
     return parsed
-
-
-def load_as_obj(file: TextIO) -> AppManifest:
-    """
-    Loads the contents of an ACF file into an AppManifest object.
-    :param file: A file object.
-    :return: An AppManifest object with ACF data.
-    """
-    manifest = loads_as_obj(file.read())
-    return manifest._replace(manifest_path=Path(file.name))
-
-
-def load(file: TextIO) -> Dict[str, Any]:
-    """
-    Loads the contents of an ACF file into a Python object.
-    :param file: A file object.
-    :return: An Ordered Dictionary with ACF data.
-    """
-    return loads(file.read())
 
 
 def _prepare_subsection(data: Dict[str, Any], sections: List[str]) -> Dict[str, Any]:
