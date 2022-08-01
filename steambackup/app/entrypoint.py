@@ -28,9 +28,9 @@ def parse_arguments() -> Arguments:
             raise TypeError(f"{arg} is not a directory or does not exist")
 
     def is_steam_library(arg: str) -> Path:
-        path = Path(arg, STEAMAPPS_DIRECTORY)
-        if path.exists() and path.is_dir():
-            return path
+        steamapps_path = Path(arg, STEAMAPPS_DIRECTORY)
+        if steamapps_path.exists() and steamapps_path.is_dir():
+            return Path(arg)
         else:
             logging.error(
                 "%s does not have a %s directory or does not exist",
