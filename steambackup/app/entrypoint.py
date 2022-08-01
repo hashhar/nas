@@ -74,7 +74,7 @@ def get_manifests_by_install_dir(steam_library: Path) -> Dict[Path, List[AppMani
     manifests_by_install_dir: Dict[Path, List[AppManifest]] = {}
     for manifest_path in steam_library.glob(STEAMAPPS_DIRECTORY + "/*.acf"):
         with open(manifest_path, encoding="utf-8") as manifest_file:
-            logging.debug("Parsing ACF file: %s", manifest_path)
+            logging.info("Parsing ACF file: %s", manifest_path)
             manifest = acf.load_as_obj(manifest_file)
             logging.debug("Parsed ACF file %s as: %s", manifest_path, manifest)
             manifests_by_install_dir.setdefault(Path(manifest.install_dir), []).append(
