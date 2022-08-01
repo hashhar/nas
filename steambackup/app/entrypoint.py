@@ -112,12 +112,15 @@ def get_steam_apps(steam_library: Path) -> List[SteamApp]:
                 Path(manifest.install_dir), SteamApp()
             ).add_manifest(manifest)
 
-    return [app for app in apps_by_install_dir.values()]
+    return [steam_app for steam_app in apps_by_install_dir.values()]
 
 
 def run() -> None:
     args: Arguments = parse_arguments()
-    print(get_steam_apps(args.steam_library))
+    apps = get_steam_apps(args.steam_library)
+    print(apps)
+
+    print(apps[0].manifests, apps[0].sha256)
 
     # If running in overwrite mode we can avoid processing entire library if either is
     # true:
