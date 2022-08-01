@@ -95,8 +95,10 @@ class SteamApp:
         return hasher.digest()
 
     def __repr__(self):
-        repr_fmt = '(' + ', '.join(f'{name}=%r' for name in vars(self)) + ')'
-        return self.__class__.__name__ + repr_fmt % self
+        return '%s(%s)' % (
+            type(self).__name__,
+            ', '.join("%r=%r" % item for item in vars(self).items())
+        )
 
 
 def get_steam_apps(steam_library: Path) -> List[SteamApp]:
