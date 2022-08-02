@@ -5,7 +5,7 @@ import hashlib
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, List, NamedTuple, Union
+from typing import Any, Dict, List, NamedTuple
 
 import acf
 from acf import AppManifest
@@ -73,16 +73,25 @@ def parse_arguments() -> Arguments:
     return Arguments(**parsed)
 
 
+def resolve_install_dir(steam_library: Path, install_dir: str) -> Path:
+    return Path(
+        steam_library, STEAMAPPS_DIRECTORY, COMMON_DIRECTORY, install_dir
+    ).resolve(True)
+
+
 class SteamApp:
     _hash_function: str = hashlib.sha256().name
 
-    def __init__(self):
+    def __init__(self, steam_library: Path):
+        self._steam_library = steam_library
         self._install_dir: Path
         self._manifests: List[AppManifest] = []
 
     def add_manifest(self, manifest: AppManifest):
         if self.install_dir is None:
-            self._install_dir = manifest.install_dir.resolve(True)
+            self._install_dir = resolve_install_dir(
+                self._steam_library, manifest.install_dir
+            )
         self._manifests.append(manifest)
 
     @property
@@ -141,7 +150,8 @@ def get_steam_apps(steam_library: Path) -> List[SteamApp]:
             manifest = acf.load_as_app_manifest(manifest_file)
             logging.debug("Parsed ACF file %s as: %s", manifest_path, manifest)
             apps_by_install_dir.setdefault(
-                manifest.install_dir, SteamApp()
+                resolve_install_dir(steam_library, manifest.install_dir),
+                SteamApp(steam_library),
             ).add_manifest(manifest)
 
     return [steam_app for steam_app in apps_by_install_dir.values()]

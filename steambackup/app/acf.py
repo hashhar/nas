@@ -19,7 +19,7 @@ class AppManifest(NamedTuple):
     manifest_path: Path
     app_id: int
     name: str
-    install_dir: Path
+    install_dir: str
     size_on_disk: int
     build_id: int
     download_size: Union[int, None]
@@ -44,7 +44,7 @@ def load_as_app_manifest(file: TextIO) -> AppManifest:
                 manifest_path=Path(file.name).resolve(True),
                 app_id=int(app_state.get(APP_ID_KEY)),
                 name=app_state.get(NAME_KEY),
-                install_dir=Path(app_state.get(INSTALL_DIR_KEY)).resolve(True),
+                install_dir=app_state.get(INSTALL_DIR_KEY),
                 size_on_disk=int(app_state.get(SIZE_ON_DISK_KEY)),
                 build_id=int(app_state.get(BUILD_ID_KEY)),
                 download_size=download_size,
