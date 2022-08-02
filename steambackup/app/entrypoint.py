@@ -5,7 +5,7 @@ import hashlib
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, List, NamedTuple
+from typing import Any, Dict, List, NamedTuple, Union
 
 import acf
 from acf import AppManifest
@@ -84,7 +84,7 @@ class SteamApp:
 
     def __init__(self, steam_library: Path):
         self._steam_library = steam_library
-        self._install_dir: Path
+        self._install_dir: Union[Path, None] = None
         self._manifests: List[AppManifest] = []
 
     def add_manifest(self, manifest: AppManifest):
@@ -96,6 +96,9 @@ class SteamApp:
 
     @property
     def install_dir(self):
+        if self._manifests is None:
+            raise RuntimeError("No manifests are added to the SteamApp yet")
+
         return self._install_dir
 
     @property
@@ -130,8 +133,9 @@ class SteamApp:
             return sorted(state)
 
         hasher = hashlib.new(self._hash_function)
-        for entry in walk_dir(self.install_dir):
-            hasher.update(entry.encode())
+        if self.install_dir is not None:
+            for entry in walk_dir(self.install_dir):
+                hasher.update(entry.encode())
 
         return hasher.hexdigest()
 
