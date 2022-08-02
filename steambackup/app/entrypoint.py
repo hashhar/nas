@@ -184,13 +184,22 @@ def run() -> None:
     verify_all_apps_discovered(len(apps), args.steam_library)
 
     for app in apps:
+
+        def manifest_to_str(manifest: AppManifest) -> str:
+            return (
+                "AppManifest("
+                + f"app_id={manifest.app_id}, "
+                + f"build_id={manifest.build_id}, "
+                + f"size_on_disk={manifest.size_on_disk}, "
+                + f"download_size={manifest.download_size}"
+                + ")"
+            )
+
         print(
-            app.install_dir,
-            "\n",
-            app.manifests,
-            "\n",
-            app.manifest_hash,
-            app.rsync_hash,
+            f"{app.install_dir};"
+            + f" manifest_hash={app.manifest_hash};"
+            + f" rsync_hash={app.rsync_hash};"
+            + f" manifests={[manifest_to_str(manifest) for manifest in app.manifests]}"
         )
 
     # If running in overwrite mode we can avoid processing entire library if either is
