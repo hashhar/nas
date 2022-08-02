@@ -26,7 +26,7 @@ def parse_arguments() -> Arguments:
     def directory_exists(arg: str) -> Path:
         path = Path(arg)
         if path.exists() and path.is_dir():
-            return path
+            return path.resolve(True)
         else:
             logging.error("%s is not a dictionary or does not exist", arg)
             raise TypeError()
@@ -34,7 +34,7 @@ def parse_arguments() -> Arguments:
     def is_steam_library(arg: str) -> Path:
         steamapps_path = Path(arg, STEAMAPPS_DIRECTORY)
         if steamapps_path.exists() and steamapps_path.is_dir():
-            return Path(arg)
+            return Path(arg).resolve(True)
         else:
             logging.error(
                 "%s does not have a %s directory or does not exist",
@@ -115,10 +115,29 @@ def get_steam_apps(steam_library: Path) -> List[SteamApp]:
     return [steam_app for steam_app in apps_by_install_dir.values()]
 
 
+def verify_all_apps_discovered(app_count: int, steam_library: Path):
+    # Verify that number of discovered apps matches the number of install directories
+    install_dir_count = len(
+        [
+            path
+            for path in get_steam_install_dir_base(steam_library).iterdir()
+            if path.is_dir()
+        ]
+    )
+    if install_dir_count != app_count:
+        raise RuntimeError(
+            f"Expected number of apps ({len(apps)}) and number of install directories ({install_dir_count}) to match"
+        )
+
+
+def get_steam_install_dir_base(steam_library: Path) -> Path:
+    return Path(steam_library, STEAMAPPS_DIRECTORY, COMMON_DIRECTORY)
+
+
 def run() -> None:
     args: Arguments = parse_arguments()
     apps = get_steam_apps(args.steam_library)
-    print(len(apps))
+    verify_all_apps_discovered(len(apps), args.steam_library)
 
     for app in apps:
         for manifest in app.manifests:
