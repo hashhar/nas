@@ -118,7 +118,7 @@ def get_steam_apps(steam_library: Path) -> List[SteamApp]:
 def run() -> None:
     args: Arguments = parse_arguments()
     apps = get_steam_apps(args.steam_library)
-    print(apps)
+    print(len(apps))
 
     for app in apps:
         for manifest in app.manifests:
