@@ -120,18 +120,16 @@ def verify_all_apps_discovered(app_count: int, steam_library: Path):
     install_dir_count = len(
         [
             path
-            for path in get_steam_install_dir_base(steam_library).iterdir()
+            for path in Path(
+                steam_library, STEAMAPPS_DIRECTORY, COMMON_DIRECTORY
+            ).iterdir()
             if path.is_dir()
         ]
     )
     if install_dir_count != app_count:
         raise RuntimeError(
-            f"Expected number of apps ({len(apps)}) and number of install directories ({install_dir_count}) to match"
+            f"Expected number of apps ({app_count}) and number of install directories ({install_dir_count}) to match"
         )
-
-
-def get_steam_install_dir_base(steam_library: Path) -> Path:
-    return Path(steam_library, STEAMAPPS_DIRECTORY, COMMON_DIRECTORY)
 
 
 def run() -> None:
