@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import logging
+import os
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Union
 
@@ -73,24 +74,55 @@ def parse_arguments() -> Arguments:
 
 
 class SteamApp:
+    _hash_function: str = hashlib.sha256().name
+
     def __init__(self):
+        self._install_dir: Path
         self._manifests: List[AppManifest] = []
 
     def add_manifest(self, manifest: AppManifest):
+        if self.install_dir is None:
+            self._install_dir = manifest.install_dir.resolve(True)
         self._manifests.append(manifest)
+
+    @property
+    def install_dir(self):
+        return self._install_dir
 
     @property
     def manifests(self):
         return self._manifests
 
     @property
-    def sha256(self) -> str:
-        hasher = hashlib.sha256()
+    def manifest_hash(self) -> str:
+        hasher = hashlib.new(self._hash_function)
         sorted_manifest_paths = sorted(
             manifest.manifest_path for manifest in self.manifests
         )
         for manifest_path in sorted_manifest_paths:
             hasher.update(manifest_path.read_bytes())
+
+        return hasher.hexdigest()
+
+    @property
+    def rsync_hash(self) -> str:
+        def walk_dir(root: Path) -> List[str]:
+            state: List[str] = []
+            with os.scandir(root) as paths:
+                for path in paths:
+                    stat_result = path.stat()  # possibly cached
+                    # full path, size in bytes and modification time - same as what rsync checks
+                    state.append(
+                        f"{path.path}\t{stat_result.st_size}\t{stat_result.st_mtime_ns}"
+                    )
+                    if path.is_dir():
+                        state.extend(walk_dir(Path(path.path)))
+
+            return sorted(state)
+
+        hasher = hashlib.new(self._hash_function)
+        for entry in walk_dir(self.install_dir):
+            hasher.update(entry.encode())
 
         return hasher.hexdigest()
 
@@ -109,7 +141,7 @@ def get_steam_apps(steam_library: Path) -> List[SteamApp]:
             manifest = acf.load_as_app_manifest(manifest_file)
             logging.debug("Parsed ACF file %s as: %s", manifest_path, manifest)
             apps_by_install_dir.setdefault(
-                Path(manifest.install_dir), SteamApp()
+                manifest.install_dir, SteamApp()
             ).add_manifest(manifest)
 
     return [steam_app for steam_app in apps_by_install_dir.values()]
@@ -138,9 +170,14 @@ def run() -> None:
     verify_all_apps_discovered(len(apps), args.steam_library)
 
     for app in apps:
-        for manifest in app.manifests:
-            if manifest.app_id == 9050:
-                print(app.manifests, "\n", app.sha256)
+        print(
+            app.install_dir,
+            "\n",
+            app.manifests,
+            "\n",
+            app.manifest_hash,
+            app.rsync_hash,
+        )
 
     # If running in overwrite mode we can avoid processing entire library if either is
     # true:
