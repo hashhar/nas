@@ -1,7 +1,7 @@
 __all__ = ("load", "load_as_app_manifest")
 
 from pathlib import Path
-from typing import Any, Dict, List, NamedTuple, TextIO, Union
+from typing import Any, NamedTuple, TextIO, Union
 
 SECTION_START = "{"
 SECTION_END = "}"
@@ -19,7 +19,7 @@ class AppManifest(NamedTuple):
     manifest_path: Path
     app_id: int
     name: str
-    install_dir: str
+    install_dir_name: str
     size_on_disk: int
     build_id: int
     download_size: Union[int, None]
@@ -44,7 +44,7 @@ def load_as_app_manifest(file: TextIO) -> AppManifest:
                 manifest_path=Path(file.name).resolve(True),
                 app_id=int(app_state.get(APP_ID_KEY)),
                 name=app_state.get(NAME_KEY),
-                install_dir=app_state.get(INSTALL_DIR_KEY),
+                install_dir_name=app_state.get(INSTALL_DIR_KEY),
                 size_on_disk=int(app_state.get(SIZE_ON_DISK_KEY)),
                 build_id=int(app_state.get(BUILD_ID_KEY)),
                 download_size=download_size,
@@ -57,15 +57,15 @@ def load_as_app_manifest(file: TextIO) -> AppManifest:
         )
 
 
-def load(file: TextIO) -> Dict[str, Any]:
+def load(file: TextIO) -> dict[str, Any]:
     """
     Loads the contents of an ACF file into a Python object.
     :param file: A file object.
     :return: An Ordered Dictionary with ACF data.
     """
-    parsed: Dict[str, Any] = {}
+    parsed: dict[str, Any] = {}
     current_section = parsed
-    sections: List[str] = []
+    sections: list[str] = []
 
     lines = (line.strip() for line in file.read().splitlines())
 
@@ -91,14 +91,14 @@ def load(file: TextIO) -> Dict[str, Any]:
     return parsed
 
 
-def _prepare_subsection(data: Dict[str, Any], sections: List[str]) -> Dict[str, Any]:
+def _prepare_subsection(data: dict[str, Any], sections: list[str]) -> dict[str, Any]:
     """
     Creates a subsection ready to be filled.
     :param data: Semi-parsed dictionary.
     :param sections: A list of sections.
     :return: A newly created subsection.
     """
-    current: Dict[str, Any] = data
+    current: dict[str, Any] = data
     for section in sections[:-1]:
         current = current[section]
 

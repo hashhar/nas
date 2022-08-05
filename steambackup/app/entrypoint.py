@@ -5,13 +5,15 @@ import hashlib
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, List, NamedTuple, Union
+from typing import Any, NamedTuple
 
+import exceptions
 import acf
 from acf import AppManifest
 
 STEAMAPPS_DIRECTORY = "steamapps"
 COMMON_DIRECTORY = "common"
+MUSIC_DIRECTORY = "music"
 
 MODE_SYNC = "sync"
 MODE_OVERWRITE = "overwrite"
@@ -69,44 +71,81 @@ def parse_arguments() -> Arguments:
             "overwrite will always create new archives and overwrite any existing ones."
         ),
     )
-    parsed: Dict[str, Any] = vars(parser.parse_args())
+    parsed: dict[str, Any] = vars(parser.parse_args())
     return Arguments(**parsed)
 
 
-def resolve_install_dir(steam_library: Path, install_dir: str) -> Path:
-    return Path(
-        steam_library, STEAMAPPS_DIRECTORY, COMMON_DIRECTORY, install_dir
-    ).resolve(True)
+def steam_games_directory(steam_library: Path) -> Path:
+    return Path(steam_library, STEAMAPPS_DIRECTORY, COMMON_DIRECTORY)
+
+
+def steam_music_directory(steam_library: Path) -> Path:
+    return Path(steam_library, STEAMAPPS_DIRECTORY, MUSIC_DIRECTORY)
 
 
 class SteamApp:
+    """Represents a single Steam application.
+
+    It's a collection of unique `AppManifest` associated with a path to the Steam
+    library. Additional `AppManifest` can be added in case they share the same install
+    directory.
+
+    This may raise errors during construction if the `manifest` or `steam_library` point
+    to non-existent install directory.
+
+    :param steam_library: Path to the Steam library.
+    :param manifest: `AppManifest` for the application.
+    """
+
     _hash_function: str = hashlib.sha256().name
 
-    def __init__(self, steam_library: Path):
-        self._steam_library = steam_library
-        self._install_dir: Union[Path, None] = None
-        self._manifests: List[AppManifest] = []
+    def __init__(self, steam_library: Path, manifest: AppManifest) -> None:
+        self._manifests = set({manifest})
+        try:
+            self._install_dir = Path(
+                steam_games_directory(steam_library),
+                manifest.install_dir_name,
+            ).resolve(True)
+        except FileNotFoundError:
+            self._install_dir = Path(
+                steam_music_directory(steam_library),
+                manifest.install_dir_name,
+            ).resolve(True)
 
-    def add_manifest(self, manifest: AppManifest):
-        if self.install_dir is None:
-            self._install_dir = resolve_install_dir(
-                self._steam_library, manifest.install_dir
+    def add_manifest(self, manifest: AppManifest) -> None:
+        """Add additional `AppManifest` to the `SteamApp`.
+
+        This has no effect if the `manifest` already exists in the `SteamApp`.
+
+        :param manifest: `AppManifest` to add to the `SteamApp`.
+        :raises MismatchedManifestException: If the `manifest`'s install directory
+            doesn't match the `SteamApp` install directory.
+        """
+        if manifest.install_dir_name != self.install_dir.name:
+            raise exceptions.MismatchedManifestException(
+                f"The manifest's install directory '{manifest.install_dir_name}' "
+                "doesn't match the SteamApp's install directory '{self.install_dir}'"
             )
-        self._manifests.append(manifest)
+        self._manifests.add(manifest)
 
     @property
-    def install_dir(self):
-        if self._manifests is None:
-            raise RuntimeError("No manifests are added to the SteamApp yet")
-
+    def install_dir(self) -> Path:
+        """Absolute path to the install directory."""
         return self._install_dir
 
     @property
-    def manifests(self):
+    def manifests(self) -> set[AppManifest]:
+        """Set of `AppManifest`s which constitute this `SteamApp`."""
         return self._manifests
 
     @property
     def manifest_hash(self) -> str:
+        """A hash of the `AppManifest`s constituting this `SteamApp`.
+
+        This is computed by appending the content of the `AppManifest`s sorted by their
+        path and then computing its SHA-256.
+        """
+
         hasher = hashlib.new(self._hash_function)
         sorted_manifest_paths = sorted(
             manifest.manifest_path for manifest in self.manifests
@@ -118,8 +157,16 @@ class SteamApp:
 
     @property
     def rsync_hash(self) -> str:
-        def walk_dir(root: Path) -> List[str]:
-            state: List[str] = []
+        """A hash of all the install directory state of this `SteamApp`.
+
+        This is computed as the SHA-256 hash of a tab-separated string with file paths,
+        size and modification time sorted by paths with each entry separated by a
+        newline. File name, size and modification time are the same criteria as used by
+        rsync which has proven very well in practice.
+        """
+
+        def walk_dir(root: Path) -> list[str]:
+            state: list[str] = []
             with os.scandir(root) as paths:
                 for path in paths:
                     stat_result = path.stat()  # possibly cached
@@ -139,42 +186,74 @@ class SteamApp:
 
         return hasher.hexdigest()
 
-    def __repr__(self):
-        return "%s(%s)" % (
+    @property
+    def content_paths(self) -> list[Path]:
+        """List of paths which contain content for this `SteamApp`.
+
+        The paths include all the manifest files and the install directory.
+        """
+        paths = [manifest.manifest_path for manifest in self.manifests]
+        paths.append(self.install_dir)
+        return paths
+
+    def __repr__(self) -> str:
+        return "{}({})".format(
             type(self).__name__,
             ", ".join("%s=%r" % item for item in vars(self).items()),
         )
 
+    def __str__(self) -> str:
+        return repr(self)
 
-def get_steam_apps(steam_library: Path) -> List[SteamApp]:
-    apps_by_install_dir: Dict[Path, SteamApp] = {}
+
+def get_steam_apps(steam_library: Path) -> list[SteamApp]:
+    """Get list of `SteamApp`s discovered in the `steam_library`.
+
+    :param steam_library: Path to Steam library.
+    :return: List of discovered `SteamApp`s.
+    """
+    apps_by_install_dir: dict[str, SteamApp] = {}
     for manifest_path in steam_library.glob(STEAMAPPS_DIRECTORY + "/*.acf"):
         with open(manifest_path, encoding="utf-8") as manifest_file:
             logging.info("Parsing ACF file: %s", manifest_path)
             manifest = acf.load_as_app_manifest(manifest_file)
             logging.debug("Parsed ACF file %s as: %s", manifest_path, manifest)
-            apps_by_install_dir.setdefault(
-                resolve_install_dir(steam_library, manifest.install_dir),
-                SteamApp(steam_library),
-            ).add_manifest(manifest)
+            if manifest.install_dir_name not in apps_by_install_dir:
+                apps_by_install_dir[manifest.install_dir_name] = SteamApp(
+                    steam_library, manifest
+                )
+            else:
+                apps_by_install_dir[manifest.install_dir_name].add_manifest(manifest)
 
     return [steam_app for steam_app in apps_by_install_dir.values()]
 
 
-def verify_all_apps_discovered(app_count: int, steam_library: Path):
-    # Verify that number of discovered apps matches the number of install directories
-    install_dir_count = len(
+def verify_all_apps_discovered(app_count: int, steam_library: Path) -> None:
+    """Verify that number of discovered apps matches the number of install directories.
+
+    :param app_count: Number of apps discovered.
+    :param steam_library: Path to Steam library.
+    :raises RuntimeError: If `app_count` doesn't match the number of top-level
+        directories under the `steam_library`'s "common" and "music" subdirectories.
+    """
+    games_count = len(
         [
             path
-            for path in Path(
-                steam_library, STEAMAPPS_DIRECTORY, COMMON_DIRECTORY
-            ).iterdir()
+            for path in steam_games_directory(steam_library).iterdir()
             if path.is_dir()
         ]
     )
-    if install_dir_count != app_count:
+    music_count = len(
+        [
+            path
+            for path in steam_music_directory(steam_library).iterdir()
+            if path.is_dir()
+        ]
+    )
+    total_count = games_count + music_count
+    if total_count != app_count:
         raise RuntimeError(
-            f"Expected number of apps ({app_count}) and number of install directories ({install_dir_count}) to match"
+            f"Expected number of apps ({app_count}) and number of install directories ({total_count}) to match"
         )
 
 
