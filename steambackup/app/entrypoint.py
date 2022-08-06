@@ -177,8 +177,8 @@ class SteamApp:
                     if path.is_dir():
                         state.extend(walk_dir(Path(path.path)))
 
-            state.sort()
-            return state
+            # Cannot use in-place sort due to recursion
+            return sorted(state)
 
         hasher = hashlib.new(self._hash_function)
         for entry in walk_dir(self.install_dir):
