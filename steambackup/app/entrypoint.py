@@ -95,15 +95,15 @@ def steam_music_directory(steam_library: Path) -> Path:
     return Path(steam_library, STEAMAPPS_DIRECTORY, MUSIC_DIRECTORY)
 
 
-def get_game_or_music_install_dir(steam_library: Path, install_dir_name: str) -> Path:
-    try:
-        return Path(steam_games_directory(steam_library), install_dir_name).resolve(
-            True
-        )
-    except FileNotFoundError:
-        return Path(steam_music_directory(steam_library), install_dir_name).resolve(
-            True
-        )
+def get_game_or_music_install_dir(steam_library: Path, manifest: AppManifest) -> Path:
+    if manifest.is_music:
+        return Path(
+            steam_music_directory(steam_library), manifest.install_dir_name
+        ).resolve(True)
+
+    return Path(
+        steam_games_directory(steam_library), manifest.install_dir_name
+    ).resolve(True)
 
 
 class SteamApp:
@@ -124,9 +124,7 @@ class SteamApp:
 
     def __init__(self, steam_library: Path, manifest: AppManifest) -> None:
         self._manifests = set({manifest})
-        self._install_dir = get_game_or_music_install_dir(
-            steam_library, manifest.install_dir_name
-        )
+        self._install_dir = get_game_or_music_install_dir(steam_library, manifest)
 
     def add_manifest(self, manifest: AppManifest) -> None:
         if manifest.install_dir_name != self.install_dir.name:
@@ -226,9 +224,7 @@ def get_steam_apps(steam_library: Path) -> list[SteamApp]:
                 )
                 manifest = manifest._replace(install_dir_name=overriden_install_dir)
 
-            install_dir = get_game_or_music_install_dir(
-                steam_library, manifest.install_dir_name
-            )
+            install_dir = get_game_or_music_install_dir(steam_library, manifest)
             # Note that we cannot use just the install_dir_name as a key since both a
             # music and a game can share the same install_dir_name but still not be part
             # of the same SteamApp

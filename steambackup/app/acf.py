@@ -13,6 +13,9 @@ INSTALL_DIR_KEY = "installdir"
 SIZE_ON_DISK_KEY = "SizeOnDisk"
 BUILD_ID_KEY = "buildid"
 DOWNLOAD_SIZE_KEY = "BytesDownloaded"
+USER_CONFIG_KEY = "UserConfig"
+MOUNTED_CONFIG_KEY = "MountedConfig"
+HIGHQUALITYAUDIO_KEY = "highqualityaudio"
 
 
 class AppManifest(NamedTuple):
@@ -23,6 +26,7 @@ class AppManifest(NamedTuple):
     size_on_disk: int
     build_id: int
     download_size: Union[int, None]
+    is_music: bool
 
 
 def load_as_app_manifest(file: TextIO) -> AppManifest:
@@ -31,6 +35,18 @@ def load_as_app_manifest(file: TextIO) -> AppManifest:
     :param file: A file object.
     :return: An AppManifest object with ACF data.
     """
+
+    def check_is_music(
+        user_config: Union[dict[str, Any], None],
+        mounted_config: Union[dict[str, Any], None],
+    ) -> bool:
+        if user_config is not None and HIGHQUALITYAUDIO_KEY in user_config:
+            return True
+        if mounted_config is not None and HIGHQUALITYAUDIO_KEY in mounted_config:
+            return True
+
+        return False
+
     parsed: dict[str, Any] = load(file)
     try:
         if APP_STATE_KEY in parsed:
@@ -40,6 +56,9 @@ def load_as_app_manifest(file: TextIO) -> AppManifest:
                 if app_state.get(DOWNLOAD_SIZE_KEY) is not None
                 else None
             )
+            is_music = check_is_music(
+                parsed.get(USER_CONFIG_KEY), parsed.get(MOUNTED_CONFIG_KEY)
+            )
             return AppManifest(
                 manifest_path=Path(file.name).resolve(True),
                 app_id=int(app_state.get(APP_ID_KEY)),
@@ -48,6 +67,7 @@ def load_as_app_manifest(file: TextIO) -> AppManifest:
                 size_on_disk=int(app_state.get(SIZE_ON_DISK_KEY)),
                 build_id=int(app_state.get(BUILD_ID_KEY)),
                 download_size=download_size,
+                is_music=is_music,
             )
         raise Exception(f"Expected {APP_STATE_KEY} to be present")
     except Exception as exc:
