@@ -30,31 +30,29 @@ class Arguments(NamedTuple):
 
 
 def parse_arguments() -> Arguments:
-    def directory_exists(arg: str) -> Path:
+    def verify_directory_exists(arg: str) -> Path:
         path = Path(arg)
         if path.exists() and path.is_dir():
             return path.resolve(True)
 
-        logging.error("'%s' does not exist or is not a direcotory", arg)
-        raise TypeError()
+        raise exceptions.InvalidArgumentException(
+            f"'{arg}' does not exist or is not a directory"
+        )
 
-    def is_steam_library(arg: str) -> Path:
+    def verify_is_steam_library(arg: str) -> Path:
         steamapps_path = Path(arg, STEAMAPPS_DIRECTORY)
         if steamapps_path.exists() and steamapps_path.is_dir():
             return Path(arg).resolve(True)
 
-        logging.error(
-            "'%s' does not exist or doesn't contain a '%s' subdirectory",
-            arg,
-            STEAMAPPS_DIRECTORY,
+        raise exceptions.InvalidArgumentException(
+            f"'{arg}' does not exist or doesn't contain a"
+            f" {STEAMAPPS_DIRECTORY} subdirectory"
         )
-        raise TypeError()
 
     parser = argparse.ArgumentParser(description="Backup Steam library")
     parser.add_argument(
         "--steam-library",
         required=True,
-        type=is_steam_library,
         metavar="PATH",
         help=(
             "Path to the Steam library i.e. the directory containing the steamapps"
@@ -64,7 +62,6 @@ def parse_arguments() -> Arguments:
     parser.add_argument(
         "--destination",
         required=True,
-        type=directory_exists,
         metavar="PATH",
         help=(
             "Path to backup destination where archives will be created (or already"
@@ -84,6 +81,9 @@ def parse_arguments() -> Arguments:
     )
     parsed: dict[str, Any] = vars(parser.parse_args())
     logging.debug("Parsed arguments: %s", parsed)
+    verify_is_steam_library(parsed["steam_library"])
+    verify_directory_exists(parsed["destination"])
+
     return Arguments(**parsed)
 
 

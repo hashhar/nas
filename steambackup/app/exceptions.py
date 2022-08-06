@@ -3,3 +3,9 @@ class MismatchedManifestException(Exception):
     install directory as the SteamApp."""
 
     pass
+
+
+class InvalidArgumentException(Exception):
+    """Raised when an invalid argument is received."""
+
+    pass
