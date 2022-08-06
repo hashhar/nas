@@ -229,7 +229,9 @@ def get_steam_apps(steam_library: Path) -> list[SteamApp]:
                     manifest_path,
                     INSTALL_DIR_OVERRIDES[manifest.app_id],
                 )
-                manifest._replace(install_dir=INSTALL_DIR_OVERRIDES[manifest.app_id])
+                manifest._replace(
+                    install_dir_name=INSTALL_DIR_OVERRIDES[manifest.app_id]
+                )
 
             if manifest.install_dir_name not in apps_by_install_dir:
                 apps_by_install_dir[manifest.install_dir_name] = SteamApp(
@@ -264,10 +266,9 @@ def verify_all_apps_discovered(app_count: int, steam_library: Path) -> None:
         ]
     )
     total_count = games_count + music_count
-    if total_count != app_count + len(IGNORED_APP_IDS):
+    if total_count != app_count:
         raise RuntimeError(
-            f"Expected number of apps ({app_count}) and number of install directories"
-            "({total_count}) to match excluding ingored app count"
+            f"Expected number of apps ({app_count}) and number of install directories ({total_count}) to match"
         )
 
 
