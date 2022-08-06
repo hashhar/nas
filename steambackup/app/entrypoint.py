@@ -299,11 +299,12 @@ def run() -> None:
                 + ")"
             )
 
+        sorted_manifests = sorted(app.manifests, key=lambda m: m.app_id)
         print(
             f"{app.install_dir};"
             + f" manifest_hash={app.manifest_hash};"
             + f" rsync_hash={app.rsync_hash};"
-            + f" manifests={[manifest_to_str(manifest) for manifest in sorted(app.manifests, key=lambda manifest: manifest.app_id)]}"
+            + f" manifests={[manifest_to_str(manifest) for manifest in sorted_manifests]}"
         )
 
     # If running in overwrite mode we can avoid processing entire library if either is
