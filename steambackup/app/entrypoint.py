@@ -226,9 +226,9 @@ def get_steam_apps(steam_library: Path) -> list[SteamApp]:
             else:
                 apps_by_install_dir[manifest.install_dir_name].add_manifest(manifest)
                 logging.debug(
-                    "Added manifest to SteamApp %s: %s",
-                    apps_by_install_dir[manifest.install_dir_name],
+                    "Added manifest %s to %s",
                     manifest,
+                    apps_by_install_dir[manifest.install_dir_name],
                 )
 
     return list(apps_by_install_dir.values())
@@ -259,7 +259,7 @@ def verify_all_apps_discovered(app_count: int, steam_library: Path) -> None:
     total_count = games_count + music_count
     overrides_count = len(INSTALL_DIR_OVERRIDES)
     logging.debug(
-        "Total apps: %s (games=%s, music=%s). Discovered apps: %s with %s overrides",
+        "Total apps: %s (games=%s, music=%s). Discovered apps: %s and %s overrides",
         total_count,
         games_count,
         music_count,
