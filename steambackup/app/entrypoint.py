@@ -34,21 +34,21 @@ def parse_arguments() -> Arguments:
         path = Path(arg)
         if path.exists() and path.is_dir():
             return path.resolve(True)
-        else:
-            logging.error("%s is not a dictionary or does not exist", arg)
-            raise TypeError()
+
+        logging.error("'%s' does not exist or is not a direcotory", arg)
+        raise TypeError()
 
     def is_steam_library(arg: str) -> Path:
         steamapps_path = Path(arg, STEAMAPPS_DIRECTORY)
         if steamapps_path.exists() and steamapps_path.is_dir():
             return Path(arg).resolve(True)
-        else:
-            logging.error(
-                "%s does not have a %s directory or does not exist",
-                arg,
-                STEAMAPPS_DIRECTORY,
-            )
-            raise TypeError()
+
+        logging.error(
+            "'%s' does not exist or doesn't contain a '%s' subdirectory",
+            arg,
+            STEAMAPPS_DIRECTORY,
+        )
+        raise TypeError()
 
     parser = argparse.ArgumentParser(description="Backup Steam library")
     parser.add_argument(
@@ -56,14 +56,20 @@ def parse_arguments() -> Arguments:
         required=True,
         type=is_steam_library,
         metavar="PATH",
-        help="Path to the Steam library i.e. the directory containing the steamapps folder.",
+        help=(
+            "Path to the Steam library i.e. the directory containing the steamapps"
+            " subdirectory."
+        ),
     )
     parser.add_argument(
         "--destination",
         required=True,
         type=directory_exists,
         metavar="PATH",
-        help="Path to backup destination where archives will be created (or already exist).",
+        help=(
+            "Path to backup destination where archives will be created (or already"
+            " exist)."
+        ),
     )
     parser.add_argument(
         "--mode",
@@ -71,11 +77,13 @@ def parse_arguments() -> Arguments:
         metavar="MODE",
         choices=[MODE_SYNC, MODE_OVERWRITE],
         help=(
-            "sync will update archives if they exist otherwise will create new ones."
-            "overwrite will always create new archives and overwrite any existing ones."
+            "'sync' will update archives if they exist otherwise will create new ones."
+            " 'overwrite' will create new archives if required and overwrite any"
+            " existing ones."
         ),
     )
     parsed: dict[str, Any] = vars(parser.parse_args())
+    logging.debug("Parsed arguments: %s", parsed)
     return Arguments(**parsed)
 
 
@@ -91,11 +99,11 @@ class SteamApp:
     """Represents a single Steam application.
 
     It's a collection of unique `AppManifest` associated with a path to the Steam
-    library. Additional `AppManifest` can be added in case they share the same install
-    directory.
+    library. Additional `AppManifest` can be added to the `SteamApp` if they share the
+    same install directory.
 
-    This may raise errors during construction if the `manifest` or `steam_library` point
-    to non-existent install directory.
+    The constructor will raise `FileNotFoundError` if the `manifest` or `steam_library`
+    point to non-existent install directory.
 
     :param steam_library: Path to the Steam library.
     :param manifest: `AppManifest` for the application.
@@ -107,39 +115,27 @@ class SteamApp:
         self._manifests = set({manifest})
         try:
             self._install_dir = Path(
-                steam_games_directory(steam_library),
-                manifest.install_dir_name,
+                steam_games_directory(steam_library), manifest.install_dir_name
             ).resolve(True)
         except FileNotFoundError:
             self._install_dir = Path(
-                steam_music_directory(steam_library),
-                manifest.install_dir_name,
+                steam_music_directory(steam_library), manifest.install_dir_name
             ).resolve(True)
 
     def add_manifest(self, manifest: AppManifest) -> None:
-        """Add additional `AppManifest` to the `SteamApp`.
-
-        This has no effect if the `manifest` already exists in the `SteamApp`.
-
-        :param manifest: `AppManifest` to add to the `SteamApp`.
-        :raises MismatchedManifestException: If the `manifest`'s install directory
-            doesn't match the `SteamApp` install directory.
-        """
         if manifest.install_dir_name != self.install_dir.name:
             raise exceptions.MismatchedManifestException(
-                f"The manifest's install directory '{manifest.install_dir_name}' "
-                f"doesn't match the SteamApp's install directory '{self.install_dir}'"
+                f"The manifest's install directory '{manifest.install_dir_name}'"
+                f" doesn't match the SteamApp's install directory '{self.install_dir}'"
             )
         self._manifests.add(manifest)
 
     @property
     def install_dir(self) -> Path:
-        """Absolute path to the install directory."""
         return self._install_dir
 
     @property
     def manifests(self) -> set[AppManifest]:
-        """Set of `AppManifest`s which constitute this `SteamApp`."""
         return self._manifests
 
     @property
@@ -174,7 +170,7 @@ class SteamApp:
             with os.scandir(root) as paths:
                 for path in paths:
                     stat_result = path.stat()  # possibly cached
-                    # full path, size in bytes and modification time - same as what rsync checks
+                    # full path, size in bytes and modification time - same as rsync
                     state.append(
                         f"{path.path}\t{stat_result.st_size}\t{stat_result.st_mtime_ns}"
                     )
@@ -184,18 +180,13 @@ class SteamApp:
             return sorted(state)
 
         hasher = hashlib.new(self._hash_function)
-        if self.install_dir is not None:
-            for entry in walk_dir(self.install_dir):
-                hasher.update(entry.encode())
+        for entry in walk_dir(self.install_dir):
+            hasher.update(entry.encode())
 
         return hasher.hexdigest()
 
     @property
     def content_paths(self) -> list[Path]:
-        """List of paths which contain content for this `SteamApp`.
-
-        The paths include all the manifest files and the install directory.
-        """
         paths = [manifest.manifest_path for manifest in self.manifests]
         paths.append(self.install_dir)
         return paths
@@ -211,36 +202,36 @@ class SteamApp:
 
 
 def get_steam_apps(steam_library: Path) -> list[SteamApp]:
-    """Get list of `SteamApp`s discovered in the `steam_library`.
-
-    :param steam_library: Path to Steam library.
-    :return: List of discovered `SteamApp`s.
-    """
     apps_by_install_dir: dict[str, SteamApp] = {}
     for manifest_path in steam_library.glob(STEAMAPPS_DIRECTORY + "/*.acf"):
         with open(manifest_path, encoding="utf-8") as manifest_file:
             logging.info("Parsing ACF file: %s", manifest_path)
             manifest = acf.load_as_app_manifest(manifest_file)
-            logging.debug("Parsed ACF file %s as: %s", manifest_path, manifest)
+            logging.debug("Parsed ACF file '%s' as: %s", manifest_path, manifest)
 
             if manifest.app_id in INSTALL_DIR_OVERRIDES:
+                overriden_install_dir = INSTALL_DIR_OVERRIDES[manifest.app_id]
                 logging.info(
-                    "Overriding install dir from ACF file %s with '%s'",
-                    manifest_path,
-                    INSTALL_DIR_OVERRIDES[manifest.app_id],
+                    "Overriding install dir of app id '%s' from '%s' to '%s'",
+                    manifest.app_id,
+                    manifest.install_dir_name,
+                    overriden_install_dir,
                 )
-                manifest = manifest._replace(
-                    install_dir_name=INSTALL_DIR_OVERRIDES[manifest.app_id]
-                )
+                manifest = manifest._replace(install_dir_name=overriden_install_dir)
 
             if manifest.install_dir_name not in apps_by_install_dir:
-                apps_by_install_dir[manifest.install_dir_name] = SteamApp(
-                    steam_library, manifest
-                )
+                app = SteamApp(steam_library, manifest)
+                apps_by_install_dir[manifest.install_dir_name] = app
+                logging.debug("Created new SteamApp: %s", app)
             else:
                 apps_by_install_dir[manifest.install_dir_name].add_manifest(manifest)
+                logging.debug(
+                    "Added manifest to SteamApp %s: %s",
+                    apps_by_install_dir[manifest.install_dir_name],
+                    manifest,
+                )
 
-    return [steam_app for steam_app in apps_by_install_dir.values()]
+    return list(apps_by_install_dir.values())
 
 
 def verify_all_apps_discovered(app_count: int, steam_library: Path) -> None:
@@ -266,16 +257,32 @@ def verify_all_apps_discovered(app_count: int, steam_library: Path) -> None:
         ]
     )
     total_count = games_count + music_count
-    if total_count != app_count + len(INSTALL_DIR_OVERRIDES):
+    overrides_count = len(INSTALL_DIR_OVERRIDES)
+    logging.debug(
+        "Total apps: %s (games=%s, music=%s). Discovered apps: %s with %s overrides",
+        total_count,
+        games_count,
+        music_count,
+        app_count,
+        overrides_count,
+    )
+    if total_count != app_count + overrides_count:
         raise RuntimeError(
-            f"Expected number of apps ({app_count}) to match number of install "
-            f"directories ({total_count}) excluding number of overrides "
-            f"({len(INSTALL_DIR_OVERRIDES)})"
+            f"Expected number of apps ({app_count}) to match number of install"
+            f" directories ({total_count}) excluding overrides"
+            f" ({len(INSTALL_DIR_OVERRIDES)})"
         )
 
 
 def run() -> None:
     args: Arguments = parse_arguments()
+    logging.info(
+        "Will %s Steam library backup from '%s' to '%s'.",
+        args.mode,
+        args.steam_library,
+        args.destination,
+    )
+
     apps = get_steam_apps(args.steam_library)
     verify_all_apps_discovered(len(apps), args.steam_library)
 
@@ -306,7 +313,6 @@ def run() -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)-8s %(name)-10s %(message)s",
+        format="%(asctime)s %(levelname)-8s %(name)-8s %(message)s",
     )
     run()

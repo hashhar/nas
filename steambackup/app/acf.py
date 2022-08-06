@@ -31,7 +31,7 @@ def load_as_app_manifest(file: TextIO) -> AppManifest:
     :param file: A file object.
     :return: An AppManifest object with ACF data.
     """
-    parsed = load(file)
+    parsed: dict[str, Any] = load(file)
     try:
         if APP_STATE_KEY in parsed:
             app_state = parsed[APP_STATE_KEY]
@@ -49,12 +49,11 @@ def load_as_app_manifest(file: TextIO) -> AppManifest:
                 build_id=int(app_state.get(BUILD_ID_KEY)),
                 download_size=download_size,
             )
-        else:
-            raise Exception(f"Expected {APP_STATE_KEY} to be present")
-    except Exception:
+        raise Exception(f"Expected {APP_STATE_KEY} to be present")
+    except Exception as exc:
         raise Exception(
             f"Failed while converting to AppManifest, parsed object was: {parsed}"
-        )
+        ) from exc
 
 
 def load(file: TextIO) -> dict[str, Any]:
@@ -98,7 +97,7 @@ def _prepare_subsection(data: dict[str, Any], sections: list[str]) -> dict[str, 
     :param sections: A list of sections.
     :return: A newly created subsection.
     """
-    current: dict[str, Any] = data
+    current = data
     for section in sections[:-1]:
         current = current[section]
 
