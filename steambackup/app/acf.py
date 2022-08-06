@@ -57,7 +57,7 @@ def load_as_app_manifest(file: TextIO) -> AppManifest:
                 else None
             )
             is_music = check_is_music(
-                parsed.get(USER_CONFIG_KEY), parsed.get(MOUNTED_CONFIG_KEY)
+                app_state.get(USER_CONFIG_KEY), app_state.get(MOUNTED_CONFIG_KEY)
             )
             return AppManifest(
                 manifest_path=Path(file.name).resolve(True),
