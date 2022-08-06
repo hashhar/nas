@@ -236,8 +236,8 @@ def get_steam_apps(steam_library: Path) -> list[SteamApp]:
                     override_entry.install_dir_from_manifest
                     == manifest.install_dir_name,
                     "Install dir from manifest recorded in override entry doesn't match"
-                    " actual entry in manifest. Probably the manifest has changed,"
-                    " review whether the override entry is still needed or needs to be"
+                    " actual entry in manifest. Probably the manifest has changed."
+                    " Review whether the override entry is still needed or needs to be"
                     f" updated. Override entry: {override_entry}, manifest: {manifest}",
                 )
                 logging.info(
