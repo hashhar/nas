@@ -177,7 +177,8 @@ class SteamApp:
                     if path.is_dir():
                         state.extend(walk_dir(Path(path.path)))
 
-            return sorted(state)
+            state.sort()
+            return state
 
         hasher = hashlib.new(self._hash_function)
         for entry in walk_dir(self.install_dir):
@@ -302,7 +303,7 @@ def run() -> None:
             f"{app.install_dir};"
             + f" manifest_hash={app.manifest_hash};"
             + f" rsync_hash={app.rsync_hash};"
-            + f" manifests={[manifest_to_str(manifest) for manifest in app.manifests]}"
+            + f" manifests={[manifest_to_str(manifest) for manifest in sorted(app.manifests, key=lambda manifest: manifest.app_id)]}"
         )
 
     # If running in overwrite mode we can avoid processing entire library if either is
