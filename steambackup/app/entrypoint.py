@@ -225,7 +225,7 @@ def get_steam_apps(steam_library: Path) -> list[SteamApp]:
 
             if manifest.app_id in INSTALL_DIR_OVERRIDES:
                 logging.info(
-                    "Overriding install dir from ACF file %s with %s",
+                    "Overriding install dir from ACF file %s with '%s'",
                     manifest_path,
                     INSTALL_DIR_OVERRIDES[manifest.app_id],
                 )
