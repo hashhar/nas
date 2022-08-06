@@ -19,7 +19,7 @@ MODE_SYNC = "sync"
 MODE_OVERWRITE = "overwrite"
 
 INSTALL_DIR_OVERRIDES = {
-    20930: "the witcher 2",
+    20930: "the witcher 2",  # Lists path as "The Witcher 2" in manifest but filesystem has "the witcher 2"
 }
 
 
@@ -268,18 +268,17 @@ def verify_all_apps_discovered(app_count: int, steam_library: Path) -> None:
     total_count = games_count + music_count
     overrides_count = len(INSTALL_DIR_OVERRIDES)
     logging.debug(
-        "Total apps: %s (games=%s, music=%s). Discovered apps: %s and %s overrides",
+        "Total apps: %s (games=%s, music=%s). Discovered apps: %s. Overrides: %s",
         total_count,
         games_count,
         music_count,
         app_count,
         overrides_count,
     )
-    if total_count != app_count + overrides_count:
+    if total_count != app_count:
         raise RuntimeError(
             f"Expected number of apps ({app_count}) to match number of install"
-            f" directories ({total_count}) excluding overrides"
-            f" ({len(INSTALL_DIR_OVERRIDES)})"
+            f" directories ({total_count})"
         )
 
 
