@@ -128,7 +128,7 @@ class SteamApp:
         if manifest.install_dir_name != self.install_dir.name:
             raise exceptions.MismatchedManifestException(
                 f"The manifest's install directory '{manifest.install_dir_name}' "
-                "doesn't match the SteamApp's install directory '{self.install_dir}'"
+                f"doesn't match the SteamApp's install directory '{self.install_dir}'"
             )
         self._manifests.add(manifest)
 
@@ -269,7 +269,7 @@ def verify_all_apps_discovered(app_count: int, steam_library: Path) -> None:
     if total_count != app_count - len(INSTALL_DIR_OVERRIDES):
         raise RuntimeError(
             f"Expected number of apps ({app_count}) and number of install directories "
-            "({total_count}) to match excluding the overriden apps"
+            f"({total_count}) to match excluding the overriden apps"
         )
 
 
