@@ -266,10 +266,11 @@ def verify_all_apps_discovered(app_count: int, steam_library: Path) -> None:
         ]
     )
     total_count = games_count + music_count
-    if total_count != app_count - len(INSTALL_DIR_OVERRIDES):
+    if total_count != app_count + len(INSTALL_DIR_OVERRIDES):
         raise RuntimeError(
-            f"Expected number of apps ({app_count}) and number of install directories "
-            f"({total_count}) to match excluding the overriden apps"
+            f"Expected number of apps ({app_count}) to match number of install "
+            f"directories ({total_count}) excluding number of overrides "
+            f"({len(INSTALL_DIR_OVERRIDES)})"
         )
 
 
