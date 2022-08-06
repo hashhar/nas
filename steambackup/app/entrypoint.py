@@ -5,7 +5,6 @@ import hashlib
 import logging
 import os
 from pathlib import Path
-from re import A
 from typing import Any, NamedTuple
 
 import exceptions
@@ -19,9 +18,9 @@ MUSIC_DIRECTORY = "music"
 MODE_SYNC = "sync"
 MODE_OVERWRITE = "overwrite"
 
-IGNORED_APP_IDS = [
-    20930  # Lists path as "The Witcher 2" in manifest but filesystem has "the witcher 2"
-]
+INSTALL_DIR_OVERRIDES = {
+    20930: "the witcher 2",
+}
 
 
 class Arguments(NamedTuple):
@@ -224,12 +223,13 @@ def get_steam_apps(steam_library: Path) -> list[SteamApp]:
             manifest = acf.load_as_app_manifest(manifest_file)
             logging.debug("Parsed ACF file %s as: %s", manifest_path, manifest)
 
-            if manifest.app_id in IGNORED_APP_IDS:
+            if manifest.app_id in INSTALL_DIR_OVERRIDES:
                 logging.info(
-                    "Skipped ACF file %s because the appid is present in ignore list",
+                    "Overriding install dir from ACF file %s with %s",
                     manifest_path,
+                    INSTALL_DIR_OVERRIDES[manifest.app_id],
                 )
-                continue
+                manifest._replace(install_dir=INSTALL_DIR_OVERRIDES[manifest.app_id])
 
             if manifest.install_dir_name not in apps_by_install_dir:
                 apps_by_install_dir[manifest.install_dir_name] = SteamApp(
