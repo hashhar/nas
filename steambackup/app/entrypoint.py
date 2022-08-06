@@ -30,7 +30,7 @@ class Arguments(NamedTuple):
 
 
 def parse_arguments() -> Arguments:
-    def directory_exists(arg: str) -> Path:
+    def require_directory_exists(arg: str) -> Path:
         path = Path(arg)
         if path.exists() and path.is_dir():
             return path.resolve(True)
@@ -39,7 +39,7 @@ def parse_arguments() -> Arguments:
             f"'{arg}' does not exist or is not a directory"
         )
 
-    def is_steam_library(arg: str) -> Path:
+    def require_steam_library_exists(arg: str) -> Path:
         steamapps_path = Path(arg, STEAMAPPS_DIRECTORY)
         if steamapps_path.exists() and steamapps_path.is_dir():
             return Path(arg).resolve(True)
@@ -81,8 +81,8 @@ def parse_arguments() -> Arguments:
     )
     parsed: dict[str, Any] = vars(parser.parse_args())
     logging.debug("Parsed arguments: %s", parsed)
-    parsed["steam_library"] = is_steam_library(parsed["steam_library"])
-    parsed["destination"] = directory_exists(parsed["destination"])
+    parsed["steam_library"] = require_steam_library_exists(parsed["steam_library"])
+    parsed["destination"] = require_directory_exists(parsed["destination"])
 
     return Arguments(**parsed)
 
