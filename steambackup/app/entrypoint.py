@@ -229,7 +229,7 @@ def get_steam_apps(steam_library: Path) -> list[SteamApp]:
                     manifest_path,
                     INSTALL_DIR_OVERRIDES[manifest.app_id],
                 )
-                manifest._replace(
+                manifest = manifest._replace(
                     install_dir_name=INSTALL_DIR_OVERRIDES[manifest.app_id]
                 )
 
