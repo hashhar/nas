@@ -18,8 +18,19 @@ MUSIC_DIRECTORY = "music"
 MODE_SYNC = "sync"
 MODE_OVERWRITE = "overwrite"
 
+
+class OverrideEntry(NamedTuple):
+    install_dir_from_manifest: str
+    overridden_install_dir: str
+    reason: str
+
+
 INSTALL_DIR_OVERRIDES = {
-    20930: "the witcher 2",  # Lists path as "The Witcher 2" in manifest but filesystem has "the witcher 2"
+    20930: OverrideEntry(
+        "The Witcher 2",
+        "the witcher 2",
+        "Lists path as 'The Witcher 2' in manfiest but filesystem has 'the witcher 2'",
+    )
 }
 
 
@@ -27,6 +38,11 @@ class Arguments(NamedTuple):
     steam_library: Path
     destination: Path
     mode: str
+
+
+def verify(condition: bool, message: str) -> None:
+    if not condition:
+        raise exceptions.VerifyException(message)
 
 
 def parse_arguments() -> Arguments:
@@ -215,14 +231,26 @@ def get_steam_apps(steam_library: Path) -> list[SteamApp]:
             logging.debug("Parsed ACF file '%s' as: %s", manifest_path, manifest)
 
             if manifest.app_id in INSTALL_DIR_OVERRIDES:
-                overriden_install_dir = INSTALL_DIR_OVERRIDES[manifest.app_id]
+                override_entry = INSTALL_DIR_OVERRIDES[manifest.app_id]
+                verify(
+                    override_entry.install_dir_from_manifest
+                    == manifest.install_dir_name,
+                    "Install dir from manifest recorded in override entry doesn't match"
+                    " actual entry in manifest. Probably the manifest has changed,"
+                    " review whether the override entry is still needed or needs to be"
+                    f" updated. Override entry: {override_entry}, manifest: {manifest}",
+                )
                 logging.info(
-                    "Overriding install dir of app id '%s' from '%s' to '%s'",
+                    "Overriding install dir of app id '%s' from '%s' to '%s' because of"
+                    " reason: %s",
                     manifest.app_id,
                     manifest.install_dir_name,
-                    overriden_install_dir,
+                    override_entry.overridden_install_dir,
+                    override_entry.reason,
                 )
-                manifest = manifest._replace(install_dir_name=overriden_install_dir)
+                manifest = manifest._replace(
+                    install_dir_name=override_entry.overridden_install_dir
+                )
 
             install_dir = get_game_or_music_install_dir(steam_library, manifest)
             # Note that we cannot use just the install_dir_name as a key since both a
