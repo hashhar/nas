@@ -288,12 +288,7 @@ def run() -> None:
                 + ")"
             )
 
-        print(
-            f"{app.install_dir};"
-            + f" manifest_hash={app.manifest_hash};"
-            + f" rsync_hash={app.rsync_hash};"
-            + f" manifests={[manifest_to_str(manifest) for manifest in app.manifests]}"
-        )
+        print(f"{app}")
 
     # If running in overwrite mode we can avoid processing entire library if either is
     # true:
