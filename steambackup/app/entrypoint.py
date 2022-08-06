@@ -20,8 +20,8 @@ MODE_OVERWRITE = "overwrite"
 
 
 class OverrideEntry(NamedTuple):
-    install_dir_from_manifest: str
-    overridden_install_dir: str
+    manifest_dir: str
+    override_dir: str
     reason: str
 
 
@@ -233,23 +233,22 @@ def get_steam_apps(steam_library: Path) -> list[SteamApp]:
             if manifest.app_id in INSTALL_DIR_OVERRIDES:
                 override_entry = INSTALL_DIR_OVERRIDES[manifest.app_id]
                 verify(
-                    override_entry.install_dir_from_manifest
-                    == manifest.install_dir_name,
-                    "Install dir from manifest recorded in override entry doesn't match"
-                    " actual entry in manifest. Probably the manifest has changed."
-                    " Review whether the override entry is still needed or needs to be"
-                    f" updated. Override entry: {override_entry}, manifest: {manifest}",
+                    override_entry.manifest_dir == manifest.install_dir_name,
+                    "Override entry install dir doesn't match manifest. Override"
+                    f" entry: {override_entry}, manifest: {manifest}. Probably the"
+                    " manifest has changed. Review whether the override entry is still"
+                    " needed or needs to be updated.",
                 )
                 logging.info(
                     "Overriding install dir of app id '%s' from '%s' to '%s' because of"
                     " reason: %s",
                     manifest.app_id,
                     manifest.install_dir_name,
-                    override_entry.overridden_install_dir,
+                    override_entry.override_dir,
                     override_entry.reason,
                 )
                 manifest = manifest._replace(
-                    install_dir_name=override_entry.overridden_install_dir
+                    install_dir_name=override_entry.override_dir
                 )
 
             install_dir = get_game_or_music_install_dir(steam_library, manifest)
