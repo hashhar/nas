@@ -3,8 +3,8 @@ services:
     build:
       context: caddy
       args:
-        - VERSION=2.5.1
-    image: hashhar/caddy:2.5.1-3
+        - VERSION=2.5.2
+    image: hashhar/caddy:2.5.2-3
     container_name: caddy
     env_file:
       - shared.env
