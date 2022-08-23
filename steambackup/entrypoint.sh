@@ -71,7 +71,9 @@ map_installdir_to_manifests() {
     # Each installdir can be present in multiple manifests (e.g. both 9050 and
     # 9070 have installdir as "Doom 3")
     # So we create a map of installdir => delimited list of manifest files
-    for manifest in "${APP_MANIFESTS"
+    for manifest in "${APP_MANIFESTS}"; do
+        echo F
+    done
 }
 
-discover_games
+discover_games $@
