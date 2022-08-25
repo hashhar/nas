@@ -6,11 +6,16 @@ The end goal is to have all software that runs on the NAS be defined as docker
 containers via docker-compose so that this repository can simply be cloned and
 all stacks can be started.
 
+In case you already have everything setup from the [Initial Setup](#initial-setup) and
+[Further Setup](#further-setup) you can skip to [Usage](#usage).
+
 # Initial Setup
 
 After following initial setup once you arrive at DSM UI follow the steps below.
 
-## Shared Folder
+## Control Panel
+
+### Shared Folder
 
 Create the following shares:
 
@@ -22,7 +27,13 @@ Create the following shares:
 | `git` | git repositories | ✅ | - | ✅ | ✅ |
 | `syno` | synology files like logs and reports | ✅ | ✅ | ✅ | ✅ |
 
-## User & Group
+### File Services
+
+Enable "Asynchronous read" in Advanced Settings under SMB tab.
+
+Enable "File Fast Clone" under Advanced tab.
+
+### User & Group
 
 Enable "User home service" under Advanced tab.
 
@@ -35,7 +46,7 @@ Set up the groups and users as described below.
 >   columns.
 > - `-` means to leave unchecked so that permissions are inherited.
 
-### Groups
+#### Groups
 
 | Name | Description | Read/Write | Read Only | No Access | Allow Apps | Deny Apps |
 |------|-------------|------------|-----------|-----------|------------|-----------|
@@ -45,7 +56,7 @@ Set up the groups and users as described below.
 | `service_rw` | read-write service accounts | docker, data | - | - | - | `*` |
 | `<your_user>` | user private group for <your_user> | data | - | - | DSM, File Station, SMB | `*` |
 
-### Users
+#### Users
 
 | Name | Description | Groups | Read/Write | Read Only | No Access | Allow Apps | Deny Apps |
 |------|-------------|--------|------------|-----------|-----------|------------|-----------|
@@ -58,7 +69,11 @@ Set up the groups and users as described below.
 | `<your_user>` | <your_user> | `<your_user>` | - | - | - | - | - |
 | `<other_user>` | <other_user> | `home` | - | - | - | - | - |
 
-## Security
+### Security
+
+Enable 2FA for users in adminstrator group under "Account" tab.
+
+Enable account protection under "Account" tab.
 
 Enable firewall and firewall notifications under "Firewall" tab.
 
@@ -78,20 +93,70 @@ Clone the `default` firewall profile, name it `secure` and add following rules:
 | - | All | All | Allow |
 | ✅ | All | All | Deny |
 
+### Hardware & Power
+
+Enable automatic restart on power supply being fixed and WOL on all LAN ports.
+
+Consider changing fan speed to "Cool mode".
+
+Enable hibernation logs and increase hibernation time to the max of 5 hours under "HDD
+Hibernation" tab.
+
+Enable UPS support and set standby time to 1 hour.
+
 ## Package Center
+
+Add a new package source "SynoCommunity" with location
+"https://packages.synocommunity.com/".
 
 Install the following apps:
 
-- exFAT Access
-- Snapshot Replication
-- Storage Analyzer
 - Docker
+- Log Center
+- Storage Analyzer
+- Cloud Sync
 - Git Server
+- Snapshot Replication
+- exFAT Access
+- SynoCli Disk Tools
+- SynoCli File Tools
+- SynoCli Monitor Tools
+- SynoCli Network Tools
+
+## File Station
+
+Under "Mount/Connections" tab in settings allow all users to mount "Server and Cloud
+Service".
+
+## Resource Monitor
+
+Enable usage history under settings.
 
 ## Storage Manager
 
 Schedule data scrubbing and ensure space reclamation schedule is set under
 Global Settings.
+
+Create a scheduled Extended S.M.A.R.T. test.
+
+Make sure monthly drive reports and bad sector warnings are enabled under "Settings"
+tab.
+
+## Universal Search
+
+Disable "Skip numeric characters when indexing file contents" under Settings > System.
+
+## Log Center
+
+Under "Archive Settings" choose `/volume1/syno/logs` as the location to archive local
+logs to once database size exceeds 1GB or more than 1 million logs or logs older than 1
+month happen.
+
+Enable archiving logs as text format in addition to default format.
+
+Enable compressing log archives.
+
+Enable archiving logs separately according to device.
 
 ## Snapshot Replication
 
@@ -106,19 +171,43 @@ Set up a snapshot schedule as described below:
 | `homes` | ✅ | Daily | Every 1 hour | Keep all for 1 day. 24 hourly, 7 daily, 2 weekly, 1 monthly and 1 yearly with min 5 |
 | `syno` | ✅ | Daily | Every day | Keep all for 1 day. 24 hourly, 7 daily, 2 weekly, 1 monthly and 1 yearly with min 5 |
 
-# Docker Setup
+## Storage Analyzer
 
-## Obtain the PID and GID of Users
+In Settings configure saving reports to `syno/reports` and collect volume usage history
+daily.
 
-ssh into the system using the normal user (not the dedicated users we created
-above) and run `id <username>` which should output something like:
+Create a report task called "Storage Report" which generates weekly reports.
+
+# Further Setup
+
+Once you've configured everything as needed on DSM we can move to configuring things for
+SSH and other use.
+
+## PublicKey Auth for SSH
+
+```sh
+ssh-copy-id -i ~/.ssh/id_rsa <ssh_user>@<synology_ip>
+```
+
+You might also want to add following to `~/.ssh/config`:
 
 ```
-uid=<UID>(<username>) gid=100(users) groups=100(users),<GID>(<group>)
+Host <synology_ip> <hostname>.local <hostname> <dns_name>
+	HostName <synology_ip>
+	User <ssh_user>
+	IdentityFile ~/.ssh/id_rsa
 ```
 
-Make sure to use the group id from one of secondary groups since in our setup
-the default `users` group doesn't have permissions to anything.
+## Passwordless Sudo
+
+Since Synology's Docker requires sudo always it's a good idea to enable passwordless
+sudo as below:
+
+```sh
+cat << EOF | sudo tee /etc/sudoers.d/99-passwordless-sudo
+<ssh_username> ALL=(ALL) NOPASSWD: ALL
+EOF
+```
 
 ## Directory Setup
 
@@ -150,14 +239,10 @@ manually managed folders):
 ├── Personal                           [5]
 │   ├── Games
 │   │   ├── Steam                      [6]
-│   │   └── Steam Backup               [7]
+│   │   └── SteamBackup                [7]
 │   ├── Pictures
 │   │   ├── Manual                     [8]
-│   │   │   └── Camera Roll Archive
 │   │   └── Synced                     [9]
-│   │       ├── Camera Roll
-│   │       ├── Saved Pictures
-│   │       └── Screenshots
 │   └── Software
 │       ├── Automatic                  [10]
 │       └── Manual                     [11]
@@ -191,7 +276,7 @@ manually managed folders):
 > echo mkdir -p "$root"/Media/{$categories_csv}/_torrents "$root"/Staging/{Torrents/{$categories_csv},_torrents/{Completed,Watching/{$categories_csv}}}
 > # Run the output of previous command
 > mkdir -p "$root"/{Media,Staging}/YouTube/_archive
-> mkdir -p "$root"/Personal/{Games/{Steam,'Steam Backup'},Pictures/{Synced/{'Camera Roll','Saved Pictures',Screenshots},Manual/'Camera Roll Archive'},Software/{Automatic,Manual}}
+> mkdir -p "$root"/Personal/{Games/{Steam,SteamBackup},Pictures/{Synced,Manual},Software/{Automatic,Manual}}
 > mkdir -p "$root"/Scratch
 >
 > # May want to instead let permissions get managed by apps themselves when
@@ -246,6 +331,18 @@ manually managed folders):
 16. `/Staging/_torrents`: .torrent file root for torrent apps.  
     All .torrent files get placed here into `Completed` once downloaded.
     Any files placed into `Watching` get queued for downloads.
+
+## Obtain the PID and GID of Users
+
+ssh into the system using the normal user (not the dedicated users we created
+above) and run `id <username>` which should output something like:
+
+```
+uid=<UID>(<username>) gid=100(users) groups=100(users),<GID>(<group>)
+```
+
+Make sure to use the group id from one of secondary groups since in our setup
+the default `users` group doesn't have permissions to anything.
 
 ## Docker macvlan Networking
 
