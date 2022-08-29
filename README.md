@@ -344,85 +344,6 @@ uid=<UID>(<username>) gid=100(users) groups=100(users),<GID>(<group>)
 Make sure to use the group id from one of secondary groups since in our setup
 the default `users` group doesn't have permissions to anything.
 
-## Docker macvlan Networking
-
-### Why?
-
-Synology shares the same instance of Nginx for both it's main UI (DSM) as well
-as the inbuilt Reverse Proxy. Nginx has some rules which redirect any unmatched
-subdomain to the DSM login page. This means that if you reverse proxy
-`nas.example.com` then any request to `other.nas.example.com` would get
-redirected to DSM login page unless you also reverse proxy
-`other.nas.example.com` to some IP and port explcitly. This makes using
-wildcard subdomains a semi-manual process since you have to setup reverse proxy
-entries for every single subdomain in the UI.
-
-A possible fix is to edit the generated Nginx config for the reverse proxy to
-remove the check on `$host` and allow wildcard subdomains in the `server_name`
-but these changes will either be undid everytime you change a setting on the
-NAS which touches Nginx or when DSM version is updated depending on how you
-apply it.
-
-We don't want to deal with this problem. So we can setup a separate network
-stack unrelated to Synology's default which will have port 80 and 443 free for
-us to run our own choice of reverse proxy on them like Caddy, Nginx, Traefik
-etc.
-
-### Prerequisites
-
-- Make sure your LAN is using `192.168.0.0/16` address space (i.e. subnet mask
-  of `255.255.0.0`).
-- Configure your DHCP server to only use `192.168.1.0/24` for the DHCP pool
-  (i.e. `192.168.1.1` to `192.168.1.255`).
-
-This will allow us to have clear identification of what network a device is on
-by looking at the address and also make it easier to prevent IP collisions.
-
-### Description
-
-Any container running on the macvlan network cannot connect to the physical
-host and neither can the physical host connect to the container on macvlan
-network.  Also any other container not running on the macvlan network is not
-routable from the macvlan network.
-
-This means our reverse proxy will not be able to reach the Synology host nor
-the other way around. Also any other containers running on Synology won't be
-reachable from the reverse proxy making our reverse proxy pretty useless.
-
-To solve this we create three networks:
-
-- `192.168.1.0/24` - router's DHCP pool on which all home devices will live.
-- `192.168.2.0/24` - macvlan network on Synology on which our reverse proxy
-  container will live.
-- `172.18.0.0/16` - Docker bridge network on which other containers will run.
-
-Our reverse proxy container will attach to both the macvlan network as well as
-the Docker bridge. The macvlan will make our reverse proxy reachable from other
-hosts on the home network (except the Docker host itself i.e. Synology) while
-the Docker bridge will make it reachable from other containers so that we can
-reverse proxy to them.
-
-To make the macvlan network be able to talk to the host we need to add explicit
-routes. Since we don't have a need to make the reverse proxy reachable from the
-Synology host yet we skip this part for now but it's documented if it's ever
-needed. Note that the routes and interfaces will go away on a restart.
-
-```sh
-macvlan_iface='macvlan0'
-parent_iface='eth0'
-host_macvlan_addr='192.168.2.50/32'
-macvlan_subnet='192.168.2.0/24'
-
-sudo ip link add "$macvlan_iface" link "$parent_iface" type macvlan mode bridge
-sudo ip addr add "$host_macvlan_addr" dev "$macvlan_iface"
-sudo ip link set "$macvlan_iface" up
-sudo ip route add "$macvlan_subnet" dev "$macvlan_iface"
-```
-
-See [this article][1] for more details.
-
-[1]: https://web.archive.org/web/20220706105432/https://www.linuxtechi.com/create-use-macvlan-network-in-docker/
-
 # Usage
 
 All the services here are defined using Docker Compose.
@@ -526,6 +447,87 @@ exist to allow connections to 22000/tcp, 22000/udp (data transfer) and
 21027/udp (local discovery) from all IP addresses.
 
 Make sure to enable authentication on the web UI.
+
+# Appendix
+
+## Docker macvlan Networking
+
+### Why?
+
+Synology shares the same instance of Nginx for both it's main UI (DSM) as well
+as the inbuilt Reverse Proxy. Nginx has some rules which redirect any unmatched
+subdomain to the DSM login page. This means that if you reverse proxy
+`nas.example.com` then any request to `other.nas.example.com` would get
+redirected to DSM login page unless you also reverse proxy
+`other.nas.example.com` to some IP and port explcitly. This makes using
+wildcard subdomains a semi-manual process since you have to setup reverse proxy
+entries for every single subdomain in the UI.
+
+A possible fix is to edit the generated Nginx config for the reverse proxy to
+remove the check on `$host` and allow wildcard subdomains in the `server_name`
+but these changes will either be undid everytime you change a setting on the
+NAS which touches Nginx or when DSM version is updated depending on how you
+apply it.
+
+We don't want to deal with this problem. So we can setup a separate network
+stack unrelated to Synology's default which will have port 80 and 443 free for
+us to run our own choice of reverse proxy on them like Caddy, Nginx, Traefik
+etc.
+
+### Prerequisites
+
+- Make sure your LAN is using `192.168.0.0/16` address space (i.e. subnet mask
+  of `255.255.0.0`).
+- Configure your DHCP server to only use `192.168.1.0/24` for the DHCP pool
+  (i.e. `192.168.1.1` to `192.168.1.255`).
+
+This will allow us to have clear identification of what network a device is on
+by looking at the address and also make it easier to prevent IP collisions.
+
+### Description
+
+Any container running on the macvlan network cannot connect to the physical
+host and neither can the physical host connect to the container on macvlan
+network.  Also any other container not running on the macvlan network is not
+routable from the macvlan network.
+
+This means our reverse proxy will not be able to reach the Synology host nor
+the other way around. Also any other containers running on Synology won't be
+reachable from the reverse proxy making our reverse proxy pretty useless.
+
+To solve this we create three networks:
+
+- `192.168.1.0/24` - router's DHCP pool on which all home devices will live.
+- `192.168.2.0/24` - macvlan network on Synology on which our reverse proxy
+  container will live.
+- `172.18.0.0/16` - Docker bridge network on which other containers will run.
+
+Our reverse proxy container will attach to both the macvlan network as well as
+the Docker bridge. The macvlan will make our reverse proxy reachable from other
+hosts on the home network (except the Docker host itself i.e. Synology) while
+the Docker bridge will make it reachable from other containers so that we can
+reverse proxy to them.
+
+To make the macvlan network be able to talk to the host we need to add explicit
+routes. Since we don't have a need to make the reverse proxy reachable from the
+Synology host yet we skip this part for now but it's documented if it's ever
+needed. Note that the routes and interfaces will go away on a restart.
+
+```sh
+macvlan_iface='macvlan0'
+parent_iface='eth0'
+host_macvlan_addr='192.168.2.50/32'
+macvlan_subnet='192.168.2.0/24'
+
+sudo ip link add "$macvlan_iface" link "$parent_iface" type macvlan mode bridge
+sudo ip addr add "$host_macvlan_addr" dev "$macvlan_iface"
+sudo ip link set "$macvlan_iface" up
+sudo ip route add "$macvlan_subnet" dev "$macvlan_iface"
+```
+
+See [this article][1] for more details.
+
+[1]: https://web.archive.org/web/20220706105432/https://www.linuxtechi.com/create-use-macvlan-network-in-docker/
 
 # Inspiration
 
