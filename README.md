@@ -25,7 +25,7 @@ Create the following shares:
 | `data` | all user data | - | ✅ | ✅ | - |
 | `docker` | docker containers | ✅ | - | ✅ | - |
 | `git` | git repositories | ✅ | - | ✅ | ✅ |
-| `syno` | synology files like logs and reports | ✅ | ✅ | ✅ | ✅ |
+| `syno` | synology logs and reports | ✅ | ✅ | ✅ | ✅ |
 
 ### File Services
 
@@ -104,6 +104,11 @@ Hibernation" tab.
 
 Enable UPS support and set standby time to 1 hour.
 
+### External Devices
+
+Under Settings make sure that the default permissions look like you'd want them to.
+Specifically make sure that non-admin users/groups have permissions if you want that.
+
 ## Package Center
 
 Add a new package source "SynoCommunity" with location
@@ -111,13 +116,13 @@ Add a new package source "SynoCommunity" with location
 
 Install the following apps:
 
-- Docker
-- Log Center
-- Storage Analyzer
 - Cloud Sync
-- Git Server
-- Snapshot Replication
 - exFAT Access
+- Log Center
+- Snapshot Replication
+- Storage Analyzer
+- Docker
+- Git Server
 - SynoCli Disk Tools
 - SynoCli File Tools
 - SynoCli Monitor Tools
@@ -125,8 +130,8 @@ Install the following apps:
 
 ## File Station
 
-Under "Mount/Connections" tab in settings allow all users to mount "Server and Cloud
-Service".
+Under "Mount/Connections" tab in settings allow users in adminstrator or user private
+groups to mount "Server and Cloud Service".
 
 ## Resource Monitor
 
@@ -142,6 +147,9 @@ Create a scheduled Extended S.M.A.R.T. test.
 Make sure monthly drive reports and bad sector warnings are enabled under "Settings"
 tab.
 
+Change "Record File Access Time" to Never and enable "Usage Details" under the volume
+settings.
+
 ## Universal Search
 
 Disable "Skip numeric characters when indexing file contents" under Settings > System.
@@ -149,8 +157,7 @@ Disable "Skip numeric characters when indexing file contents" under Settings > S
 ## Log Center
 
 Under "Archive Settings" choose `/volume1/syno/logs` as the location to archive local
-logs to once database size exceeds 1GB or more than 1 million logs or logs older than 1
-month happen.
+logs to once database size exceeds 1GB or logs become older than 1 month.
 
 Enable archiving logs as text format in addition to default format.
 
@@ -173,10 +180,14 @@ Set up a snapshot schedule as described below:
 
 ## Storage Analyzer
 
-In Settings configure saving reports to `syno/reports` and collect volume usage history
-daily.
+In Settings configure saving reports to `syno/reports/storage` and collect volume usage
+history daily.
 
 Create a report task called "Storage Report" which generates weekly reports.
+
+## Security Advisor
+
+Enable regular scan schedule with monthly reports saved to `syno/reports/security`.
 
 # Further Setup
 
@@ -268,13 +279,15 @@ manually managed folders):
 ```
 
 > 📝 **NOTE:** You can use the below snippet to create the structure - make
-> sure to change `/volume1/` to whatever is appropriate in your case.
+> sure to change `/volume1/` to whatever is appropriate in your case.  
+> **Replace *hashhar* with your username, not the SSH user.**
 >
 > ```sh
-> root='/volume1/data'
+> root='/volume1/data'# path to share where you want this directory structure
+> private_user='hashhar' # name of your user (not the SSH user)
 > categories_csv='Books,Comics,Movies,Music,TV'
 > echo mkdir -p "$root"/Media/{$categories_csv}/_torrents "$root"/Staging/{Torrents/{$categories_csv},_torrents/{Completed,Watching/{$categories_csv}}}
-> # Run the output of previous command
+> # Execute the output of previous command
 > mkdir -p "$root"/{Media,Staging}/YouTube/_archive
 > mkdir -p "$root"/Personal/{Games/{Steam,SteamBackup},Pictures/{Synced,Manual},Software/{Automatic,Manual}}
 > mkdir -p "$root"/Scratch
@@ -291,7 +304,7 @@ manually managed folders):
 > sudo chown -R qbittorrent:service_rw "$root"/Staging
 > sudo chown -R ytdl:service_rw "$root"/Staging/YouTube
 > # Scratch
-> sudo chown -R radon:users "$root"/Scratch # over SMB group is always users
+> sudo chown -R hashhar:users "$root"/Scratch # over SMB group is always users
 > ```
 
 ### Directory Purposes
@@ -396,11 +409,11 @@ We have multiple environment files.
   that the same port is used in the Caddyfile as well a container's
   configuration.
 
-# Special Instructions
+## Special Instructions
 
 Some containers need a bit of manual setup which is described below.
 
-## Caddy
+### Caddy
 
 Caddy requires some secrets to work. Make sure the following variables have values defined in `caddy/secrets.env`:
 
@@ -410,7 +423,7 @@ Caddy requires some secrets to work. Make sure the following variables have valu
   requests to them we need to use the address of the NAS. Set this to a DNS
   name which resolves to the NAS's IP or the IP address itself.
 
-## Plex
+### Plex
 
 When Plex runs using a bridge network it incorrectly identifies LAN traffic as
 coming from internet and doesn't allow to finish Plex Media Server setup.
@@ -435,7 +448,7 @@ See more at:
 [plex-installation]: https://support.plex.tv/articles/200288586/#toc-2
 [plex-docker-docs]: https://github.com/plexinc/pms-docker#running-on-a-headless-server-with-container-using-host-networking
 
-## Syncthing
+### Syncthing
 
 Syncthing needs to use host networking for local discovery to work. So
 Syncthing container's network mode is set to host and we use a DNS name
