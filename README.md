@@ -361,6 +361,28 @@ the default `users` group doesn't have permissions to anything.
 
 # Usage
 
+First we need to copy this repository over onto the NAS.
+
+```sh
+# SSH into synology
+cd /volume1/git
+mkdir -p path/repo
+cd path/repo
+git init --bare
+```
+
+```sh
+# On local machine with this repo cloned
+git remote add <synology remote> <ssh user>@<synology host>:/volume1/path/repo
+git push <synology remote> <local branch>
+```
+
+```sh
+# SSH into synology
+cd /volume1/docker/apps/nas
+git clone /volume1/git/path/repo .
+```
+
 All the services here are defined using Docker Compose.
 
 To start containers:
