@@ -3,8 +3,8 @@ services:
     build:
       context: caddy
       args:
-        - VERSION=2.5.2
-    image: hashhar/caddy:2.5.2-3
+        - VERSION=2
+    image: hashhar/caddy:2-0
     container_name: caddy
     env_file:
       - shared.env
@@ -49,10 +49,10 @@ services:
     build:
       context: qbittorrent
       args:
-        - VERSION=4.4.5
+        - VERSION=latest
         - LISTENING_PORT=$QBITTORRENT_LISTENING_PORT
         - DATA_ROOT
-    image: hashhar/qbittorrent:4.4.5-0
+    image: hashhar/qbittorrent:latest-0
     container_name: qbittorrent
     environment:
       - PUID=$QBITTORRENT_UID
