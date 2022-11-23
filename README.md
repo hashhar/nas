@@ -81,15 +81,15 @@ Clone the `default` firewall profile, name it `secure` and add following rules:
 
 | Enabled | Ports | Source | Action | Description |
 |---------|-------|--------|--------|-------------|
-| ✅ | Encrypted terminal service | 192.168.1.0/24 | Allow | SSH access from LAN |
-| ✅ | Management UI (HTTP and HTTPS) | 192.168.1.0/24 | Allow | DSM UI from LAN |
-| ✅ | Windows file server, WS-Discovery | 192.168.1.0/24 | Allow | SMB access from LAN |
-| ✅ | HTTP, HTTPS | 192.168.1.0/24 | Allow | DSM Reverse Proxy from LAN |
+| ✅ | Encrypted terminal service | 192.168.1.1/22 | Allow | SSH access from LAN |
+| ✅ | Management UI (HTTP and HTTPS) | 192.168.1.1/22 | Allow | DSM UI from LAN |
+| ✅ | Windows file server, WS-Discovery | 192.168.1.1/22 | Allow | SMB access from LAN |
+| ✅ | HTTP, HTTPS | 192.168.1.1/22 | Allow | DSM Reverse Proxy from LAN |
 | ✅ | Synology Assistant | All | Allow | find.synology.com |
 | ✅ | 22000/tcp | All | Allow | Syncthing TCP based sync traffic |
 | ✅ | 22000/udp | All | Allow | Syncthing QUIC based sync traffic |
 | ✅ | 21027/udp | All | Allow | Syncthing discovery broadcasts on IPv4 and multicasts on IPv6 |
-| ✅ | All | 192.168.2.0/24 | Allow | All access from macvlan network |
+| ✅ | All | 192.168.2.1/23 | Allow | All access from macvlan range (2.1 to 3.254) |
 | ✅ | All | 172.18.0.0/16 | Allow | All access from Docker compose network |
 | ✅ | All | 172.16.0.0/12 | Allow | All access from Docker containers |
 | - | All | All | Allow | Allow by default |
