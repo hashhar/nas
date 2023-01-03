@@ -4,7 +4,7 @@ services:
       context: caddy
       args:
         - VERSION=2
-    image: hashhar/caddy:2-0
+    image: hashhar/caddy:2-1
     container_name: caddy
     env_file:
       - shared.env

@@ -4,12 +4,20 @@
 	email hashhar_dev@outlook.com
 }
 
+# Usage: proxy-host <subdomain> <target>
+# Proxies <subdomain>.nas.hashhar.com AND <subdomain>.nas.ts.hashhar.com to <target>
 (proxy-host) {
-	@{args.0} host {args.0}.nas.hashhar.com
+	@{args.0} {
+		# Multiple host matchers are OR'ed together
+		host {args.0}.nas.hashhar.com {args.0}.nas.ts.hashhar.com
+	}
 	reverse_proxy @{args.0} {args.1}
 }
 
-*.nas.hashhar.com, nas.hashhar.com {
+# over LAN
+*.nas.hashhar.com, nas.hashhar.com,
+# over Tailscale subnet router
+*.nas.ts.hashhar.com, nas.ts.hashhar.com {
 	log
 
 	tls {
@@ -17,20 +25,20 @@
 		resolvers 1.1.1.1
 	}
 
-	map {labels.3} {known} {online} {
-		plex "yes" "yes"
-		qbittorrent "yes" "yes"
-		syncthing "yes" "yes"
+	# The regex is guaranteed to match the first subdomain since the host can only ever
+	# be <xyz>.nas.hashhar.com or <xyz>.nas.ts.hashhar.com but never
+	# <xyz>.foo.nas.hashhar.com due to how wildcard domains work
+	map {host} {known} {
+		~(plex)\..* "yes"
+		~(qbittorrent)\..* "yes"
+		~(syncthing)\..* "yes"
 
-		default "no" "no"
+		default "no"
 	}
 
 	route {
 		@unknown expression `{known} == "no"`
-		respond @unknown "Unknown service: {labels.3}" 404
-
-		@offline expression `{online} == "no"`
-		respond @offline "Service {labels.3} temporarily unavailable, please try again after some time" 502
+		respond @unknown "No service available at {host}" 404
 
 		import proxy-host "plex" "http://plex:{$PLEX_PORT}"
 		import proxy-host "qbittorrent" "http://qbittorrent:{$QBITTORRENT_PORT}"

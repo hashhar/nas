@@ -125,6 +125,7 @@ Install the following apps:
 - Storage Analyzer
 - Docker
 - Git Server
+- Tailscale
 - SynoCli Disk Tools
 - SynoCli File Tools
 - SynoCli Monitor Tools
@@ -190,6 +191,14 @@ Create a report task called "Storage Report" which generates weekly reports.
 ## Security Advisor
 
 Enable regular scan schedule with monthly reports saved to `syno/reports/security`.
+
+## Tailscale
+
+Follow the instructions at https://tailscale.com/kb/1103/exit-nodes/ to enable using the
+Synology as an exit node for the Tailscale network.
+
+Also disable key expiry from machine settings for the node if there's a chance that
+you'll be unable to re-authenticate to Tailscale every 3 months.
 
 # Further Setup
 
@@ -565,6 +574,45 @@ sudo ip route add "$macvlan_subnet" dev "$macvlan_iface"
 See [this article][1] for more details.
 
 [1]: https://web.archive.org/web/20220706105432/https://www.linuxtechi.com/create-use-macvlan-network-in-docker/
+
+## Tailscale Routing
+
+Our docker-compose stack has two networks, a MacVLAN network with subnet 192.168.2.0/24 and a Docker bridge network with subnet 172.18.0.0/16.
+
+Tailscale binds itself to the primary interface of the Synology, i.e. neither to the MacVLAN or the Docker bridge network. This means while we can use Tailscale to access Synology itself we cannot access anything that's not exposed on the host network.
+
+To access services and containers on non-host networks we need to enable subnet routing. The goal is to be able to connect to our docker-compose stack over Tailscale using DNS names with HTTPS enabled.
+
+The below steps are collected from:
+
+- [Tailscale docs on subnet routers][tailscale-subnet-routers]
+- [Run your own mesh VPN and DNS with Tailscale and PiHole][tailscale-mesh-vpn-dns]
+
+[tailscale-subnet-routers]: https://tailscale.com/kb/1019/subnets/
+[tailscale-mesh-vpn-dns]: https://shotor.com/blog/run-your-own-mesh-vpn-and-dns-with-tailscale-and-pihole/
+
+- ```sh
+  echo 'net.ipv4.ip_forward = 1' | sudo tee -a /etc/sysctl.conf
+  echo 'net.ipv6.conf.all.forwarding = 1' | sudo tee -a /etc/sysctl.conf
+  sudo sysctl -p /etc/sysctl.conf
+  ```
+- ```sh
+  # Advertise a route to just the Caddy container
+  #sudo tailscale up --advertise-routes=172.18.0.3/32
+  # Advertise a route to entire Docker bridge network
+  sudo tailscale up --advertise-routes=172.18.0.0/16
+  ```
+- Enable "Use tailscale subnets" on the client devices
+
+Now you can register DNS records similar to below:
+
+```bind
+nas.ts.hashhar.com	1	IN	A	172.18.0.3 ; Caddy over Tailscale
+*.nas.ts.hashhar.com	1	IN	CNAME	nas.ts.hashhar.com.	; Wildcard domain over Tailscale
+```
+
+Now you can access Caddy itself at nas.ts.hashhar.com and services at
+*.nas.ts.hashhar.com when connected to Tailscale.
 
 # Inspiration
 
