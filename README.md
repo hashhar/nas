@@ -245,9 +245,12 @@ manually managed folders):
 
 ```
 .
-├── Media                              [1]
+├── Games
+│   ├── Steam                          [1]
+│   └── SteamBackup                    [2]
+├── Media                              [3]
 │   ├── Books
-│   │   └── _torrents                  [2]
+│   │   └── _torrents                  [4]
 │   ├── Comics
 │   │   └── _torrents
 │   ├── Movies
@@ -256,30 +259,28 @@ manually managed folders):
 │   │   └── _torrents
 │   ├── TV
 │   │   └── _torrents
-│   └── YouTube                        [3]
-│       └── _archive                   [4]
-├── Personal                           [5]
-│   ├── Games
-│   │   ├── Steam                      [6]
-│   │   └── SteamBackup                [7]
+│   └── YouTube                        [5]
+│       └── _archive                   [6]
+├── Personal                           [7]
+│   ├── OneDrive                       [8]
 │   ├── Pictures
-│   │   ├── Manual                     [8]
-│   │   └── Synced                     [9]
+│   │   ├── Manual                     [9]
+│   │   └── Synced                     [10]
 │   └── Software
-│       ├── Automatic                  [10]
-│       └── Manual                     [11]
-├── Scratch                            [12]
+│       ├── Automatic                  [11]
+│       └── Manual                     [12]
+├── Scratch                            [13]
 └── Staging
-    ├── Torrents                       [13]
+    ├── Torrents                       [14]
     │   ├── Books
     │   ├── Comics
     │   ├── Movies
     │   ├── Music
     │   ├── TV
     │   └── temp
-    ├── YouTube                        [14]
-    │   └── _archive                   [15]
-    └── _torrents                      [16]
+    ├── YouTube                        [15]
+    │   └── _archive                   [16]
+    └── _torrents                      [17]
         ├── Completed
         └── Watching
             ├── Books
@@ -299,12 +300,15 @@ manually managed folders):
 > categories_csv='Books,Comics,Movies,Music,TV'
 > echo mkdir -p "$root"/Media/{$categories_csv}/_torrents "$root"/Staging/{Torrents/{$categories_csv},_torrents/{Completed,Watching/{$categories_csv}}}
 > # Execute the output of previous command
+> mkdir -p "$root"/Games/{Steam,SteamBackup}
 > mkdir -p "$root"/{Media,Staging}/YouTube/_archive
-> mkdir -p "$root"/Personal/{Games/{Steam,SteamBackup},Pictures/{Synced,Manual},Software/{Automatic,Manual}}
+> mkdir -p "$root"/Personal/{Pictures/{Synced,Manual},Software/{Automatic,Manual}}
 > mkdir -p "$root"/Scratch
 >
 > # May want to instead let permissions get managed by apps themselves when
 > # they create these directories
+> # Games
+> sudo chown -R hashhar:users "$root"/Games # over SMB group is always users
 > # Media
 > sudo chown -R arr:service_rw "$root"/Media
 > sudo chown -R ytdl:service_rw "$root"/Media/YouTube
@@ -320,41 +324,40 @@ manually managed folders):
 
 ### Directory Purposes
 
-1.  `/Media`: Media root for apps like Plex.  
-    Each subdirectory here is managed by a *arr app which moves files here from
-    finished downloads from the matching subdirectory in `/Staging/Torrents`.
-2.  `/Media/<category>/_torrents`: .torrent files for each category.  
-    These are manually moved here to make sure we have the sources required to
-    rebuild our media if needed.
-3.  `/Media/YouTube`: Downloaded YouTube channels, playlists or videos.  
-4.  `/Media/YouTube/_archive`: Archive files created by `youtube-dl`/`yt-dlp`,
-    scripts and `youtube-dl` config files used for a particular download.
+1.  `/Games/Steam`: Secondary Steam library folder with less played games; network
+    mapped to a PC.
+2.  `/Games/SteamBackup`: Steam library backup.
 
-5.  `/Personal`: Manually managed personal data folder.
-6.  `/Personal/Games/Steam`: Secondary Steam library folder with less played
-    games network mapped to a PC.
-7.  `/Personal/Games/Steam Backup`: Steam library backup created using Steam.
-8.  `/Personal/Pictures/Manual`: Manually managed pictures directory.
-9.  `/Personal/Pictures/Synced`: Syncthing managed pictures directory.
-10. `/Personal/Software/Automatic`: Software downloaded and kept up to date
+3.  `/Media`: Media root for apps like Plex.  
+    Each subdirectory here is managed by a *arr app which moves files here from finished
+    downloads from the matching subdirectory in `/Staging/Torrents`.
+4.  `/Media/<category>/_torrents`: .torrent files for each category.  
+    These are manually moved here to make sure we have the sources required to rebuild
+    our media if needed.
+5.  `/Media/YouTube`: Downloaded YouTube channels, playlists or videos.  
+6.  `/Media/YouTube/_archive`: Archive files created by `yt-dlp`, scripts and `yt-dlp`
+    config files used for a particular download.
+
+7.  `/Personal`: Manually managed personal data folder.
+8.  `/Personal/OneDrive`: A mirror of OneDrive maintained using CloudSync.
+9.  `/Personal/Pictures/Manual`: Manually managed pictures directory.
+10. `/Personal/Pictures/Synced`: Syncthing managed pictures directory.
+11. `/Personal/Software/Automatic`: Software downloaded and kept up to date
     programmatically.
-11. `/Personal/Software/Manual`: Software downloaded and kept up to date
-    manually.
+12. `/Personal/Software/Manual`: Software downloaded and kept up to date manually.
 
-12. `/Scratch`: This is a temporary workspace which can be used as needed.
+13. `/Scratch`: This is a temporary workspace which can be used as needed.
 
-13. `/Staging/Torrents`: Download root for torrent apps.  
-    All torrent downloads get downloaded here into one of the subdirectories
-    based on their category. This exactly mirrors the structure in `/Media` so
-    that each of the *arr apps can move finished downloads to `/Media`.
-14. `/Staging/YouTube`: In progress YouTube channel, playlist or video
-    downloads.  
-15. `/Staging/YouTube/_archive`: Archive files created by
-    `youtube-dl`/`yt-dlp`, scripts and `youtube-dl` config files used for a
-    particular download.
-16. `/Staging/_torrents`: .torrent file root for torrent apps.  
-    All .torrent files get placed here into `Completed` once downloaded.
-    Any files placed into `Watching` get queued for downloads.
+14. `/Staging/Torrents`: Download root for torrent apps.  
+    All torrent downloads get downloaded here into one of the subdirectories based on
+    their category. This exactly mirrors the structure in `/Media` so that each of the
+    *arr apps can move finished downloads to `/Media`.
+15. `/Staging/YouTube`: In progress YouTube channel, playlist or video downloads.
+16. `/Staging/YouTube/_archive`: Archive files created by `yt-dlp`, scripts and `yt-dlp`
+    config files used for a particular download.
+17. `/Staging/_torrents`: .torrent file root for torrent apps.  
+    All .torrent files get placed here into `Completed` once downloaded. Any files
+    placed into `Watching` get queued for downloads.
 
 ## Obtain the PID and GID of Users
 
