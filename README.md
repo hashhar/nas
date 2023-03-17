@@ -437,10 +437,6 @@ We have multiple environment files.
   into containers using `env_file` in `docker-compose.yml`. Useful for secrets.
   ***Define non-secret environment variables applicable to a single container
   using `environment` in `docker-compose.yml`.***
-- `shared.env`: Contains environment variables injected into multiple
-  containers. An example of when this might be useful is if you want to ensure
-  that the same port is used in the Caddyfile as well a container's
-  configuration.
 
 ## Special Instructions
 
@@ -452,9 +448,6 @@ Caddy requires some secrets to work. Make sure the following variables have valu
 
 - `CF_API_TOKEN`: Cloudflare API token with read permissions for `Zone.Zone`
   and edit permissions for `Zone.DNS`.
-- `HOST_ADDRESS`: Some containers use host networking. This means that to proxy
-  requests to them we need to use the address of the NAS. Set this to a DNS
-  name which resolves to the NAS's IP or the IP address itself.
 
 ### Plex
 

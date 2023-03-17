@@ -7,8 +7,12 @@ services:
     image: hashhar/caddy:2-1
     container_name: caddy
     env_file:
-      - shared.env
       - caddy/secrets.env
+    environment:
+      - PLEX_PORT=32400
+      - QBITTORRENT_PORT=$QBITTORRENT_PORT
+      - SYNCTHING_PORT=8384
+      - HOST_ADDRESS=syno.hashhar.com # IP/port resolving to NAS - for connecting to containers using host networks
     volumes:
       - $DOCKER_DATA/caddy/data:/data
       - $DOCKER_DATA/caddy/config:/config
