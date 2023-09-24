@@ -119,6 +119,14 @@ Clone the `default` firewall profile, name it `secure` and add following rules:
 | - | All | All | Allow | Allow by default |
 | ✅ | All | All | Deny | Deny by default |
 
+### Terminal & SNMP
+
+Enable SSH service.
+
+### Login Portal
+
+Enable "Automatically redirect HTTP connection to HTTPS for DSM desktop".
+
 ### Hardware & Power
 
 Enable automatic restart on power supply being fixed and WOL on all LAN ports.
