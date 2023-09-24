@@ -258,11 +258,10 @@ manually managed folders):
 ```
 .
 ├── Games
-│   ├── Steam                          [1]
-│   └── SteamBackup                    [2]
-├── Media                              [3]
+│   └── Steam                          [1]
+├── Media                              [2]
 │   ├── Books
-│   │   └── _torrents                  [4]
+│   │   └── _torrents                  [3]
 │   ├── Comics
 │   │   └── _torrents
 │   ├── Movies
@@ -271,28 +270,28 @@ manually managed folders):
 │   │   └── _torrents
 │   ├── TV
 │   │   └── _torrents
-│   └── YouTube                        [5]
-│       └── _archive                   [6]
-├── Personal                           [7]
-│   ├── OneDrive                       [8]
+│   └── YouTube                        [4]
+│       └── _archive                   [5]
+├── Personal                           [6]
+│   ├── OneDrive                       [7]
 │   ├── Pictures
-│   │   ├── Manual                     [9]
-│   │   └── Synced                     [10]
+│   │   ├── Manual                     [8]
+│   │   └── Synced                     [9]
 │   └── Software
-│       ├── Automatic                  [11]
-│       └── Manual                     [12]
-├── Scratch                            [13]
+│       ├── Automatic                  [10]
+│       └── Manual                     [11]
+├── Scratch                            [12]
 └── Staging
-    ├── Torrents                       [14]
+    ├── Torrents                       [13]
     │   ├── Books
     │   ├── Comics
     │   ├── Movies
     │   ├── Music
     │   ├── TV
     │   └── temp
-    ├── YouTube                        [15]
-    │   └── _archive                   [16]
-    └── _torrents                      [17]
+    ├── YouTube                        [14]
+    │   └── _archive                   [15]
+    └── _torrents                      [16]
         ├── Completed
         └── Watching
             ├── Books
@@ -307,12 +306,12 @@ manually managed folders):
 > **Replace *hashhar* with your username, not the SSH user.**
 >
 > ```sh
-> root='/volume1/data'# path to share where you want this directory structure
+> root='/volume1/data' # path to share where you want this directory structure
 > private_user='hashhar' # name of your user (not the SSH user)
 > categories_csv='Books,Comics,Movies,Music,TV'
 > echo mkdir -p "$root"/Media/{$categories_csv}/_torrents "$root"/Staging/{Torrents/{$categories_csv},_torrents/{Completed,Watching/{$categories_csv}}}
 > # Execute the output of previous command
-> mkdir -p "$root"/Games/{Steam,SteamBackup}
+> mkdir -p "$root"/Games/Steam
 > mkdir -p "$root"/{Media,Staging}/YouTube/_archive
 > mkdir -p "$root"/Personal/{Pictures/{Synced,Manual},Software/{Automatic,Manual}}
 > mkdir -p "$root"/Scratch
@@ -320,54 +319,53 @@ manually managed folders):
 > # May want to instead let permissions get managed by apps themselves when
 > # they create these directories
 > # Games
-> sudo chown -R hashhar:users "$root"/Games # over SMB group is always users
+> sudo chown -R "$private_user":users "$root"/Games # over SMB group is always users
 > # Media
 > sudo chown -R arr:service_rw "$root"/Media
 > sudo chown -R ytdl:service_rw "$root"/Media/YouTube
 > # Personal
-> sudo chown -R hashhar:users "$root"/Personal # over SMB group is always users
+> sudo chown -R "$private_user":users "$root"/Personal # over SMB group is always users
 > sudo chown -R syncthing:service_rw "$root"/Personal/Pictures/Synced
 > # Staging
 > sudo chown -R qbittorrent:service_rw "$root"/Staging
 > sudo chown -R ytdl:service_rw "$root"/Staging/YouTube
 > # Scratch
-> sudo chown -R hashhar:users "$root"/Scratch # over SMB group is always users
+> sudo chown -R "$private_user":users "$root"/Scratch # over SMB group is always users
 > ```
 
 ### Directory Purposes
 
 1.  `/Games/Steam`: Secondary Steam library folder with less played games; network
     mapped to a PC.
-2.  `/Games/SteamBackup`: Steam library backup.
 
-3.  `/Media`: Media root for apps like Plex.  
+2.  `/Media`: Media root for apps like Plex.  
     Each subdirectory here is managed by a *arr app which moves files here from finished
     downloads from the matching subdirectory in `/Staging/Torrents`.
-4.  `/Media/<category>/_torrents`: .torrent files for each category.  
+3.  `/Media/<category>/_torrents`: .torrent files for each category.  
     These are manually moved here to make sure we have the sources required to rebuild
     our media if needed.
-5.  `/Media/YouTube`: Downloaded YouTube channels, playlists or videos.  
-6.  `/Media/YouTube/_archive`: Archive files created by `yt-dlp`, scripts and `yt-dlp`
+4.  `/Media/YouTube`: Downloaded YouTube channels, playlists or videos.  
+5.  `/Media/YouTube/_archive`: Archive files created by `yt-dlp`, scripts and `yt-dlp`
     config files used for a particular download.
 
-7.  `/Personal`: Manually managed personal data folder.
-8.  `/Personal/OneDrive`: A mirror of OneDrive maintained using CloudSync.
-9.  `/Personal/Pictures/Manual`: Manually managed pictures directory.
-10. `/Personal/Pictures/Synced`: Syncthing managed pictures directory.
-11. `/Personal/Software/Automatic`: Software downloaded and kept up to date
+6.  `/Personal`: Manually managed personal data folder.
+7.  `/Personal/OneDrive`: A mirror of OneDrive maintained using CloudSync.
+8.  `/Personal/Pictures/Manual`: Manually managed pictures directory.
+9. `/Personal/Pictures/Synced`: Syncthing managed pictures directory.
+10. `/Personal/Software/Automatic`: Software downloaded and kept up to date
     programmatically.
-12. `/Personal/Software/Manual`: Software downloaded and kept up to date manually.
+11. `/Personal/Software/Manual`: Software downloaded and kept up to date manually.
 
-13. `/Scratch`: This is a temporary workspace which can be used as needed.
+12. `/Scratch`: This is a temporary workspace which can be used as needed.
 
-14. `/Staging/Torrents`: Download root for torrent apps.  
+13. `/Staging/Torrents`: Download root for torrent apps.  
     All torrent downloads get downloaded here into one of the subdirectories based on
     their category. This exactly mirrors the structure in `/Media` so that each of the
     *arr apps can move finished downloads to `/Media`.
-15. `/Staging/YouTube`: In progress YouTube channel, playlist or video downloads.
-16. `/Staging/YouTube/_archive`: Archive files created by `yt-dlp`, scripts and `yt-dlp`
+14. `/Staging/YouTube`: In progress YouTube channel, playlist or video downloads.
+15. `/Staging/YouTube/_archive`: Archive files created by `yt-dlp`, scripts and `yt-dlp`
     config files used for a particular download.
-17. `/Staging/_torrents`: .torrent file root for torrent apps.  
+16. `/Staging/_torrents`: .torrent file root for torrent apps.  
     All .torrent files get placed here into `Completed` once downloaded. Any files
     placed into `Watching` get queued for downloads.
 
