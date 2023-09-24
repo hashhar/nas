@@ -40,6 +40,7 @@ services:
       - $DATA_ROOT/Media:$DATA_ROOT/Media:ro # read-only (will prevent us from deleting things from the UI)
     networks:
       bridge:
+        ipv4_address: "172.18.0.4"
     ports:
       # See list of ports at https://support.plex.tv/articles/201543147
       # Plex Media Server port is not exposed - reachable via caddy
@@ -70,6 +71,7 @@ services:
         target: /config
     networks:
       bridge:
+        ipv4_address: "172.18.0.5"
     ports:
       - "$QBITTORRENT_LISTENING_PORT:$QBITTORRENT_LISTENING_PORT"
       - "$QBITTORRENT_LISTENING_PORT:$QBITTORRENT_LISTENING_PORT/udp"
