@@ -101,11 +101,15 @@ Clone the `default` firewall profile, name it `secure` and add following rules:
 
 | Enabled | Ports | Source | Action | Description |
 |---------|-------|--------|--------|-------------|
-| ✅ | Encrypted terminal service | 192.168.1.1/22 | Allow | SSH access from LAN |
-| ✅ | Management UI (HTTP and HTTPS) | 192.168.1.1/22 | Allow | DSM UI from LAN |
-| ✅ | Windows file server, WS-Discovery | 192.168.1.1/22 | Allow | SMB access from LAN |
-| ✅ | HTTP, HTTPS | 192.168.1.1/22 | Allow | DSM Reverse Proxy from LAN |
-| ✅ | Synology Assistant | All | Allow | find.synology.com |
+| ✅ | SSH | 192.168.1.1/22 | Allow | SSH access from LAN |
+| ✅ | DSM HTTP/HTTPS | 192.168.1.1/22 | Allow | DSM UI from LAN |
+| ✅ | CIFS, WS-Transfer/Discovery | 192.168.1.1/22 | Allow | SMB access from LAN |
+| ✅ | HTTP/HTTPS | 192.168.1.1/22 | Allow | DSM Reverse Proxy from LAN |
+| ✅ | SSH | 192.168.20.1/24 | Allow | SSH access from LAN |
+| ✅ | DSM HTTP/HTTPS | 192.168.20.1/24 | Allow | DSM UI from LAN |
+| ✅ | CIFS, WS-Transfer/Discovery | 192.168.20.1/24 | Allow | SMB access from LAN |
+| ✅ | HTTP/HTTPS | 192.168.20.1/24 | Allow | DSM Reverse Proxy from LAN |
+| ✅ | Search Synology NAS | All | Allow | find.synology.com |
 | ✅ | 22000/tcp | All | Allow | Syncthing TCP based sync traffic |
 | ✅ | 22000/udp | All | Allow | Syncthing QUIC based sync traffic |
 | ✅ | 21027/udp | All | Allow | Syncthing discovery broadcasts on IPv4 and multicasts on IPv6 |
