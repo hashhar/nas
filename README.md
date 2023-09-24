@@ -13,6 +13,26 @@ In case you already have everything setup from the [Initial Setup](#initial-setu
 
 After following initial setup once you arrive at DSM UI follow the steps below.
 
+## Package Center
+
+Add a new package source "SynoCommunity" with location
+"https://packages.synocommunity.com/".
+
+Install the following apps:
+
+- Cloud Sync
+- exFAT Access
+- Log Center
+- Snapshot Replication
+- Storage Analyzer
+- Docker
+- Git Server
+- Tailscale
+- SynoCli Disk Tools
+- SynoCli File Tools
+- SynoCli Monitor Tools
+- SynoCli Network Tools
+
 ## Control Panel
 
 ### Shared Folder
@@ -110,26 +130,6 @@ Enable UPS support and set standby time to 1 hour.
 
 Under Settings make sure that the default permissions look like you'd want them to.
 Specifically make sure that non-admin users/groups have permissions if you want that.
-
-## Package Center
-
-Add a new package source "SynoCommunity" with location
-"https://packages.synocommunity.com/".
-
-Install the following apps:
-
-- Cloud Sync
-- exFAT Access
-- Log Center
-- Snapshot Replication
-- Storage Analyzer
-- Docker
-- Git Server
-- Tailscale
-- SynoCli Disk Tools
-- SynoCli File Tools
-- SynoCli Monitor Tools
-- SynoCli Network Tools
 
 ## File Station
 
