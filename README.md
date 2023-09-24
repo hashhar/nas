@@ -528,16 +528,6 @@ stack unrelated to Synology's default which will have port 80 and 443 free for
 us to run our own choice of reverse proxy on them like Caddy, Nginx, Traefik
 etc.
 
-### Prerequisites
-
-- Make sure your LAN is using `192.168.0.0/16` address space (i.e. subnet mask
-  of `255.255.0.0`).
-- Configure your DHCP server to only use `192.168.1.0/24` for the DHCP pool
-  (i.e. `192.168.1.1` to `192.168.1.255`).
-
-This will allow us to have clear identification of what network a device is on
-by looking at the address and also make it easier to prevent IP collisions.
-
 ### Description
 
 Any container running on the macvlan network cannot connect to the physical
@@ -551,9 +541,10 @@ reachable from the reverse proxy making our reverse proxy pretty useless.
 
 To solve this we create three networks:
 
-- `192.168.1.0/24` - router's DHCP pool on which all home devices will live.
-- `192.168.2.0/24` - macvlan network on Synology on which our reverse proxy
-  container will live.
+- `192.168.0.0/22` - secure management network.
+  - `192.168.2.0/24` - macvlan network on Synology on which our reverse proxy
+    container will live.
+- `192.168.20.0/24` - home network.
 - `172.18.0.0/16` - Docker bridge network on which other containers will run.
 
 Our reverse proxy container will attach to both the macvlan network as well as
