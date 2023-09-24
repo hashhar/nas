@@ -45,7 +45,7 @@ Create the following shares:
 | `data` | all user data | - | ✅ | ✅ | - |
 | `docker` | docker containers | ✅ | - | ✅ | - |
 | `git` | git repositories | ✅ | - | ✅ | ✅ |
-| `syno` | synology logs and reports | ✅ | ✅ | ✅ | ✅ |
+| `synology` | synology logs and reports | ✅ | ✅ | ✅ | ✅ |
 
 ### File Services
 
