@@ -46,6 +46,10 @@ Create the following shares:
 | `docker` | docker containers | ✅ | - | ✅ | - |
 | `git` | git repositories | ✅ | - | ✅ | ✅ |
 | `synology` | synology logs and reports | ✅ | ✅ | ✅ | ✅ |
+| `time_machine` | apple time machine backups | ✅ | - | ✅ | ✅ |
+
+Additionally follow [Synology Time Machine
+setup](https://kb.synology.com/en-my/DSM/tutorial/How_to_back_up_files_from_Mac_to_Synology_NAS_with_Time_Machine).
 
 ### File Services
 
@@ -74,6 +78,7 @@ Set up the groups and users as described below.
 | `home` | home users | data | - | - | DSM, File Station, SMB | `*` |
 | `service_ro` | read-only service accounts | docker | data | - | - | `*` |
 | `service_rw` | read-write service accounts | docker, data | - | - | - | `*` |
+| `time_machine` | apple time machine | time_machine | - | - | SMB | `*` |
 | `<your_user>` | user private group for <your_user> | data | - | - | DSM, File Station, SMB | `*` |
 
 #### Users
@@ -85,6 +90,7 @@ Set up the groups and users as described below.
 | `arr` | *arr applications | `service_rw` | - | - | - | - | - |
 | `qbittorrent` | qbittorrent | `service_rw` | - | - | - | - | - |
 | `syncthing` | syncthing | `service_rw` | - | - | - | - | - |
+| `time_machine` | apple time machine | `time_machine` | - | - | - | - | - |
 | `ytdl` | youtube dl | `service_rw` | - | - | - | - | - |
 | `<your_user>` | <your_user> | `<your_user>` | - | - | - | - | - |
 | `<other_user>` | <other_user> | `home` | - | - | - | - | - |
