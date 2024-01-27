@@ -25,7 +25,7 @@ Install the following apps:
 - Log Center
 - Snapshot Replication
 - Storage Analyzer
-- Docker
+- Container Manager (Docker)
 - Git Server
 - Tailscale
 - SynoCli Disk Tools
@@ -51,6 +51,9 @@ Create the following shares:
 Additionally follow [Synology Time Machine
 setup](https://kb.synology.com/en-my/DSM/tutorial/How_to_back_up_files_from_Mac_to_Synology_NAS_with_Time_Machine).
 
+Note that enabling Bonjour is onlhy required if you don't want to manually connect to
+the SMB share.
+
 ### File Services
 
 Enable "Asynchronous read" in Advanced Settings under SMB tab.
@@ -75,11 +78,11 @@ Set up the groups and users as described below.
 | Name | Description | Read/Write | Read Only | No Access | Allow Apps | Deny Apps |
 |------|-------------|------------|-----------|-----------|------------|-----------|
 | `backup` | backup users | backups, docker | `*` | - | - | `*` |
-| `home` | home users | data | - | - | DSM, File Station, SMB | `*` |
+| `home` | home users | data | - | - | Cloud Sync, DSM, File Station, SMB, Universal Search | `*` |
 | `service_ro` | read-only service accounts | docker | data | - | - | `*` |
 | `service_rw` | read-write service accounts | docker, data | - | - | - | `*` |
 | `time_machine` | apple time machine | time_machine | - | - | SMB | `*` |
-| `<your_user>` | user private group for <your_user> | data | - | - | DSM, File Station, SMB | `*` |
+| `<your_user>` | user private group for <your_user> | data | - | - | Cloud Sync, DSM, File Station, SMB, Universal Search | `*` |
 
 #### Users
 
@@ -111,10 +114,12 @@ Clone the `default` firewall profile, name it `secure` and add following rules:
 | ✅ | DSM HTTP/HTTPS | 192.168.1.1/22 | Allow | DSM UI from LAN |
 | ✅ | CIFS, WS-Transfer/Discovery | 192.168.1.1/22 | Allow | SMB access from LAN |
 | ✅ | HTTP/HTTPS | 192.168.1.1/22 | Allow | DSM Reverse Proxy from LAN |
+| ✅ | Bonjour | 192.168.1.1/22 | Allow | Bonjour service discovery |
 | ✅ | SSH | 192.168.20.1/24 | Allow | SSH access from LAN |
 | ✅ | DSM HTTP/HTTPS | 192.168.20.1/24 | Allow | DSM UI from LAN |
 | ✅ | CIFS, WS-Transfer/Discovery | 192.168.20.1/24 | Allow | SMB access from LAN |
 | ✅ | HTTP/HTTPS | 192.168.20.1/24 | Allow | DSM Reverse Proxy from LAN |
+| ✅ | Bonjour | 192.168.20.1/24 | Allow | Bonjour service discovery |
 | ✅ | Search Synology NAS | All | Allow | find.synology.com |
 | ✅ | 22000/tcp | All | Allow | Syncthing TCP based sync traffic |
 | ✅ | 22000/udp | All | Allow | Syncthing QUIC based sync traffic |
@@ -160,10 +165,12 @@ Enable usage history under settings.
 
 ## Storage Manager
 
-Schedule data scrubbing and ensure space reclamation schedule is set under
-Global Settings.
+Schedule data scrubbing (1st of every month) and ensure space reclamation schedule is
+set under Global Settings.
 
-Create a scheduled Extended S.M.A.R.T. test.
+Create a scheduled Extended S.M.A.R.T. test (15th of every month).
+
+Create a scheduled Quick S.M.A.R.T. test (daily midnight).
 
 Make sure monthly drive reports and bad sector warnings are enabled under "Settings"
 tab.
@@ -197,7 +204,8 @@ Set up a snapshot schedule as described below:
 | `docker` | ✅ | Daily | Every 1 hour | Keep all for 1 day. 24 hourly, 7 daily, 2 weekly, 1 monthly and 1 yearly with min 5 |
 | `git` | ✅ | Daily | Every day | Keep all for 1 day. 24 hourly, 7 daily, 2 weekly, 1 monthly and 1 yearly with min 5 |
 | `homes` | ✅ | Daily | Every 1 hour | Keep all for 1 day. 24 hourly, 7 daily, 2 weekly, 1 monthly and 1 yearly with min 5 |
-| `syno` | ✅ | Daily | Every day | Keep all for 1 day. 24 hourly, 7 daily, 2 weekly, 1 monthly and 1 yearly with min 5 |
+| `synology` | ✅ | Daily | Every day | Keep all for 1 day. 24 hourly, 7 daily, 2 weekly, 1 monthly and 1 yearly with min 5 |
+| `time_machine` | ✅ | Daily | Every day | Keep all for 1 day. 24 hourly, 7 daily, 2 weekly, 1 monthly and 1 yearly with min 5 |
 
 ## Storage Analyzer
 
@@ -231,11 +239,11 @@ ssh-copy-id -i ~/.ssh/id_rsa <ssh_user>@<synology_ip>
 
 You might also want to add following to `~/.ssh/config`:
 
-```
+```ssh-config
 Host <synology_ip> <hostname>.local <hostname> <dns_name>
-	HostName <synology_ip>
-	User <ssh_user>
-	IdentityFile ~/.ssh/id_rsa
+  HostName <synology_ip>
+  User <ssh_user>
+  IdentityFile ~/.ssh/id_rsa
 ```
 
 ## Passwordless Sudo
@@ -264,10 +272,11 @@ manually managed folders):
 ```
 .
 ├── Games
-│   └── Steam                          [1]
-├── Media                              [2]
+│   ├── Setups                         [1]
+│   └── Steam                          [2]
+├── Media                              [3]
 │   ├── Books
-│   │   └── _torrents                  [3]
+│   │   └── _torrents                  [4]
 │   ├── Comics
 │   │   └── _torrents
 │   ├── Movies
@@ -276,28 +285,28 @@ manually managed folders):
 │   │   └── _torrents
 │   ├── TV
 │   │   └── _torrents
-│   └── YouTube                        [4]
-│       └── _archive                   [5]
-├── Personal                           [6]
-│   ├── OneDrive                       [7]
+│   └── YouTube                        [5]
+│       └── _archive                   [6]
+├── Personal                           [7]
+│   ├── OneDrive                       [8]
 │   ├── Pictures
-│   │   ├── Manual                     [8]
-│   │   └── Synced                     [9]
+│   │   ├── Manual                     [9]
+│   │   └── Synced                     [10]
 │   └── Software
-│       ├── Automatic                  [10]
-│       └── Manual                     [11]
-├── Scratch                            [12]
+│       ├── Automatic                  [11]
+│       └── Manual                     [12]
+├── Scratch                            [13]
 └── Staging
-    ├── Torrents                       [13]
+    ├── Torrents                       [14]
     │   ├── Books
     │   ├── Comics
     │   ├── Movies
     │   ├── Music
     │   ├── TV
     │   └── temp
-    ├── YouTube                        [14]
-    │   └── _archive                   [15]
-    └── _torrents                      [16]
+    ├── YouTube                        [15]
+    │   └── _archive                   [16]
+    └── _torrents                      [17]
         ├── Completed
         └── Watching
             ├── Books
@@ -341,37 +350,38 @@ manually managed folders):
 
 ### Directory Purposes
 
-1.  `/Games/Steam`: Secondary Steam library folder with less played games; network
+1.  `/Games/Setups`: Setup files for games.  
+2.  `/Games/Steam`: Secondary Steam library folder with less played games; network
     mapped to a PC.
 
-2.  `/Media`: Media root for apps like Plex.  
+3.  `/Media`: Media root for apps like Plex.  
     Each subdirectory here is managed by a *arr app which moves files here from finished
     downloads from the matching subdirectory in `/Staging/Torrents`.
-3.  `/Media/<category>/_torrents`: .torrent files for each category.  
+4.  `/Media/<category>/_torrents`: .torrent files for each category.  
     These are manually moved here to make sure we have the sources required to rebuild
     our media if needed.
-4.  `/Media/YouTube`: Downloaded YouTube channels, playlists or videos.  
-5.  `/Media/YouTube/_archive`: Archive files created by `yt-dlp`, scripts and `yt-dlp`
+5.  `/Media/YouTube`: Downloaded YouTube channels, playlists or videos.  
+6.  `/Media/YouTube/_archive`: Archive files created by `yt-dlp`, scripts and `yt-dlp`
     config files used for a particular download.
 
-6.  `/Personal`: Manually managed personal data folder.
-7.  `/Personal/OneDrive`: A mirror of OneDrive maintained using CloudSync.
-8.  `/Personal/Pictures/Manual`: Manually managed pictures directory.
-9. `/Personal/Pictures/Synced`: Syncthing managed pictures directory.
-10. `/Personal/Software/Automatic`: Software downloaded and kept up to date
+7.  `/Personal`: Manually managed personal data folder.
+8.  `/Personal/OneDrive`: A mirror of OneDrive maintained using CloudSync.
+9.  `/Personal/Pictures/Manual`: Manually managed pictures directory.
+10. `/Personal/Pictures/Synced`: Syncthing managed pictures directory.
+11. `/Personal/Software/Automatic`: Software downloaded and kept up to date
     programmatically.
-11. `/Personal/Software/Manual`: Software downloaded and kept up to date manually.
+12. `/Personal/Software/Manual`: Software downloaded and kept up to date manually.
 
-12. `/Scratch`: This is a temporary workspace which can be used as needed.
+13. `/Scratch`: This is a temporary workspace which can be used as needed.
 
-13. `/Staging/Torrents`: Download root for torrent apps.  
+14. `/Staging/Torrents`: Download root for torrent apps.  
     All torrent downloads get downloaded here into one of the subdirectories based on
     their category. This exactly mirrors the structure in `/Media` so that each of the
     *arr apps can move finished downloads to `/Media`.
-14. `/Staging/YouTube`: In progress YouTube channel, playlist or video downloads.
-15. `/Staging/YouTube/_archive`: Archive files created by `yt-dlp`, scripts and `yt-dlp`
+15. `/Staging/YouTube`: In progress YouTube channel, playlist or video downloads.
+16. `/Staging/YouTube/_archive`: Archive files created by `yt-dlp`, scripts and `yt-dlp`
     config files used for a particular download.
-16. `/Staging/_torrents`: .torrent file root for torrent apps.  
+17. `/Staging/_torrents`: .torrent file root for torrent apps.  
     All .torrent files get placed here into `Completed` once downloaded. Any files
     placed into `Watching` get queued for downloads.
 
