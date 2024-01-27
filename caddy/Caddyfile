@@ -7,11 +7,11 @@
 # Usage: proxy-host <subdomain> <target>
 # Proxies <subdomain>.nas.hashhar.com AND <subdomain>.nas.ts.hashhar.com to <target>
 (proxy-host) {
-	@{args.0} {
+	@{args[0]} {
 		# Multiple host matchers are OR'ed together
-		host {args.0}.nas.hashhar.com {args.0}.nas.ts.hashhar.com
+		host {args[0]}.nas.hashhar.com {args[0]}.nas.ts.hashhar.com
 	}
-	reverse_proxy @{args.0} {args.1}
+	reverse_proxy @{args[0]} {args[1]}
 }
 
 # over LAN
