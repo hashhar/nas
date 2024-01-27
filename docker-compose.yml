@@ -14,8 +14,8 @@ services:
       - SYNCTHING_PORT=8384
       - HOST_ADDRESS=syno.hashhar.com # IP/port resolving to NAS - for connecting to containers using host networks
     volumes:
-      - $DOCKER_DATA/caddy/data:/data
-      - $DOCKER_DATA/caddy/config:/config
+      - caddy_data:/data
+      - caddy_config:/config
     networks:
       # x.x.x.3 to match last octet to IP of Synology for easy remembering
       macvlan:
@@ -107,3 +107,7 @@ networks:
     ipam:
       config:
         - subnet: "172.18.0.0/16"
+
+volumes:
+  caddy_data:
+  caddy_config:
