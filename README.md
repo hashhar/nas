@@ -20,6 +20,8 @@ Add a new package source "SynoCommunity" with location
 
 Install the following apps:
 
+- Advanced Media Extensions
+- Synology Photos
 - Cloud Sync
 - exFAT Access
 - Log Center
@@ -78,11 +80,11 @@ Set up the groups and users as described below.
 | Name | Description | Read/Write | Read Only | No Access | Allow Apps | Deny Apps |
 |------|-------------|------------|-----------|-----------|------------|-----------|
 | `backup` | backup users | backups, docker | `*` | - | - | `*` |
-| `home` | home users | data | - | - | Cloud Sync, DSM, File Station, SMB, Universal Search | `*` |
+| `home` | home users | data | - | - | Cloud Sync, DSM, File Station, SMB, Synology Photos, Universal Search | `*` |
 | `service_ro` | read-only service accounts | docker | data | - | - | `*` |
 | `service_rw` | read-write service accounts | docker, data | - | - | - | `*` |
 | `time_machine` | apple time machine | time_machine | - | - | SMB | `*` |
-| `<your_user>` | user private group for <your_user> | data | - | - | Cloud Sync, DSM, File Station, SMB, Universal Search | `*` |
+| `<your_user>` | user private group for <your_user> | data | - | - | Cloud Sync, DSM, File Station, SMB, Synology Photos, Universal Search | `*` |
 
 #### Users
 
@@ -154,6 +156,36 @@ Enable UPS support and set standby time to 1 hour.
 Under Settings make sure that the default permissions look like you'd want them to.
 Specifically make sure that non-admin users/groups have permissions if you want that.
 
+### Indexing Service
+
+Set thumbnail quality to High Quality.
+
+Consider enabling conversion on a schedule to save CPU during operational hours.
+
+### Task Scheduler
+
+Create the following scheduled tasks:
+
+#### Mount and Reindex Photos
+
+**Task:** Scheduled > User-defined script  
+**User:** root  
+**Schedule:** Daily  
+**Run command:**  
+```sh
+/bin/bash /volume1/docker/apps/nas/scripts/mount-and-reindex-photos.sh >> /volume1/synology/custom_logs/mount-and-reindex-photos.log 2>&1
+```
+
+#### Mount and Reindex Photos on-boot
+
+**Task:** Trigerred Task > User-defined script  
+**User:** root  
+**Event:** Boot-up  
+**Run command:**  
+```sh
+/bin/bash /volume1/docker/apps/nas/scripts/mount-and-reindex-photos.sh >> /volume1/synology/custom_logs/mount-and-reindex-photos.log 2>&1
+```
+
 ## File Station
 
 Under "Mount/Connections" tab in settings allow users in adminstrator or user private
@@ -204,6 +236,7 @@ Set up a snapshot schedule as described below:
 | `docker` | ✅ | Daily | Every 1 hour | Keep all for 1 day. 24 hourly, 7 daily, 2 weekly, 1 monthly and 1 yearly with min 5 |
 | `git` | ✅ | Daily | Every day | Keep all for 1 day. 24 hourly, 7 daily, 2 weekly, 1 monthly and 1 yearly with min 5 |
 | `homes` | ✅ | Daily | Every 1 hour | Keep all for 1 day. 24 hourly, 7 daily, 2 weekly, 1 monthly and 1 yearly with min 5 |
+| `photos` | ✅ | Daily | Every day | Keep all for 1 day. 24 hourly, 7 daily, 2 weekly, 1 monthly and 1 yearly with min 5 |
 | `synology` | ✅ | Daily | Every day | Keep all for 1 day. 24 hourly, 7 daily, 2 weekly, 1 monthly and 1 yearly with min 5 |
 | `time_machine` | ✅ | Daily | Every day | Keep all for 1 day. 24 hourly, 7 daily, 2 weekly, 1 monthly and 1 yearly with min 5 |
 

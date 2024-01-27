@@ -1,0 +1,53 @@
+#!/bin/bash
+
+## Inspired by https://blog.onlyservers.sh/using-a-custom-folder-with-synology-photos-dsm7
+## Add this as a scheduled task executed by root user.
+
+echo "----------------------------------------"
+date --iso-8601=seconds
+echo "----------------------------------------"
+
+readonly sources=(
+'/volume1/data/Personal/Pictures/Synced/Camera Roll'
+'/volume1/data/Personal/Pictures/Synced/Camera Roll Archive'
+'/volume1/data/Personal/Pictures/Synced/Piglet'
+'/volume1/data/Personal/Pictures/Synced/Saved Pictures'
+'/volume1/data/Personal/Pictures/Synced/Screenshots'
+)
+readonly share_path='/volume1/photo'
+readonly marker_file='.stfolder'
+
+for source in "${sources[@]}"; do
+    mount_name="$(basename "${source}")"
+    mount_target="${share_path}/${mount_name}"
+    marker_path="${mount_target}/${marker_file}"
+    if [[ -e "${marker_path}" ]]; then
+        echo "${source} already mounted at ${mount_target}"
+    else
+        [[ -e "${mount_target}" ]] || mkdir -pv "${mount_target}"
+        echo "Mounting ${source} at ${mount_target}"
+        sudo mount --bind "${source}" "${mount_target}"
+    fi
+done
+
+# If running on boot then need to wait sometime for the Synology Photos database to be available
+echo "Waiting for Synology Photos database to start..."
+while ! sudo -u postgres psql; do
+    sleep 30
+done
+echo "Waiting for Synology Photos application to start..."
+while ! pgrep -f /var/packages/SynologyPhotos/target/usr/sbin/synofoto-task-center; do
+    sleep 30
+done
+
+readonly reindex_cmd="sudo /var/packages/SynologyPhotos/target/usr/bin/synofoto-bin-index-tool -t basic_reindex -i ${share_path}"
+echo "Starting reindexing: ${reindex_cmd}"
+time $reindex_cmd
+echo "Finished with: $?"
+
+readonly reindex_motion_cmd="sudo /var/packages/SynologyPhotos/target/usr/bin/synofoto-bin-index-tool -t update_metadata -o motion_photo -i ${share_path}"
+echo "Starting regenerating motion photos: ${reindex_motion_cmd}"
+time $reindex_motion_cmd
+echo "Finished with: $?"
+
+echo "========================================"
