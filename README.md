@@ -549,6 +549,12 @@ exist to allow connections to 22000/tcp, 22000/udp (data transfer) and
 
 Make sure to enable authentication on the web UI.
 
+### qBittorrent
+
+You can generate the password hash for a given password using
+`qbittorrent/gen_password.py` script. Update the value for
+`WebUI\Password_PBKDF2` in `qBittorrent.conf` with the output of the script.
+
 # Appendix
 
 ## Docker macvlan Networking
