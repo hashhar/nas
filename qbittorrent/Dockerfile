@@ -21,8 +21,12 @@ RUN mkdir -p ${CONFIG} \
 
 FROM lscr.io/linuxserver/qbittorrent:${VERSION}
 
+RUN apk add --no-cache rsync
+
 COPY ./99-overwrite-config /etc/cont-init.d/99-overwrite-config
 
+# Copy the generated config to some location, the 99-overwrite-config will
+# replace the in-container config files with these on every start
 ARG CONFIG
 ENV DEFAULT_CONFIG=/default-config
 COPY --from=builder ${CONFIG}/* ${DEFAULT_CONFIG}/

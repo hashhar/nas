@@ -6,14 +6,6 @@ CONFIG=/config/qBittorrent
 
 set -e
 
-# Backup directory if it exists
-if [ -d "${CONFIG}" ]; then
-  backup_dir="/config/backup-$(date +%FT%T)" \
-    && echo "Backing up existing config to ${backup_dir}" \
-    && mkdir -p "${backup_dir}" \
-    && cp -rv "${CONFIG}/." "${backup_dir}/"
-fi
-
-# Overwrite using the default config
-echo "Overwriting existing config with the default"
-cp -rv "${DEFAULT_CONFIG}/." "${CONFIG}/"
+# Copy over the new config while backing up any overwrites
+backup_dir="/config/backup-$(date +%FT%T)"
+rsync -vv --checksum -a --backup --backup-dir="${backup_dir}/" "${DEFAULT_CONFIG}/" "${CONFIG}/"
