@@ -1,7 +1,6 @@
 --stories
 --highlights
 --tagged
---igtv
 --latest-stamps=/download/latest-stamps.ini
 --no-captions
 --no-metadata-json
