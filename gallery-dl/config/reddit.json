@@ -1,0 +1,29 @@
+
+{
+    "extractor": {
+        "reddit": {
+            "directory": [
+                "{category}",
+                "{subreddit}",
+                "{subcategory}"
+            ],
+            "#": "only spawn child extractors for links to specific sites",
+            "whitelist": ["imgur", "redgifs"],
+            "#": "put files from child extractors into the reddit directory",
+            "parent-directory": true,
+            "#": "transfer metadata to any child extractor as '_reddit'",
+            "parent-metadata": "_reddit",
+
+            "client-id": null,
+            "user-agent": null,
+            "refresh-token": null
+        },
+        "reddit>imgur":
+        {
+            "#": "special settings for imgur URLs found in reddit posts",
+            "directory": [],
+            "filename": "{_reddit[id]} {_reddit[title]} {id}.{extension}"
+        },
+        "redgifs": {}
+    }
+}

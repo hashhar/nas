@@ -1,0 +1,26 @@
+{
+    "extractor": {
+        "base-directory": "./",
+        "archive": "./archive/{category}.sqlite3",
+
+        "#": "skip already downloaded files",
+        "skip": true,
+
+        "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:126.0) Gecko/20100101 Firefox/126.0",
+        "browser": "firefox:macos",
+
+        "path-restrict": "windows",
+        "path-strip": "windows"
+    },
+    "downloader": {},
+    "output": {
+        "logfile": "/data/logs/log.txt",
+        "unsupportedfile": "/data/logs/unsupported.txt",
+        "errorfile": "/data/logs/errors.txt"
+    },
+    "postprocessors": [
+        {
+            "name": "mtime"
+        }
+    ]
+}

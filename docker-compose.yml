@@ -110,6 +110,24 @@ services:
     # this is expected to run and exit when done
     restart: "no"
 
+  gallery-dl:
+    # Only runs when this profile is enabled
+    profiles:
+      - gallery-dl
+    build:
+      context: gallery-dl
+    image: hashhar/gallery-dl:latest-0
+    container_name: gallery-dl
+    environment:
+      - PUID=$SYNCTHING_UID
+      - PGID=$SYNCTHING_GID
+    volumes:
+      - $DOCKER_DATA/gallery-dl/data:/data
+      - $DATA_ROOT/Personal/Pictures/Synced/Wallpapers/.Fun:/download
+    network_mode: "host"
+    # this is expected to run and exit when done
+    restart: "no"
+
 networks:
   macvlan:
     driver: macvlan
