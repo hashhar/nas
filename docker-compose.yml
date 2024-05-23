@@ -92,24 +92,6 @@ services:
     # Uses ports 8384 (UI), 22000/tcp,udp (file transfer) and 21027/udp (local discovery)
     restart: unless-stopped
 
-  instaloader:
-    # Only runs when this profile is enabled
-    profiles:
-      - instaloader
-    build:
-      context: instaloader
-    image: hashhar/instaloader:latest-0
-    container_name: instaloader
-    environment:
-      - PUID=$SYNCTHING_UID
-      - PGID=$SYNCTHING_GID
-    volumes:
-      - $DOCKER_DATA/instaloader:/var/instaloader
-      - $DATA_ROOT/Personal/Pictures/Synced/Wallpapers/.Fun/Pics/instaloader:/download
-    network_mode: "host"
-    # this is expected to run and exit when done
-    restart: "no"
-
   gallery-dl:
     # Only runs when this profile is enabled
     profiles:
