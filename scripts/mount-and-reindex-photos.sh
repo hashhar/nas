@@ -49,19 +49,21 @@ done
 
 # If running on boot then need to wait sometime for the Synology Photos database to be available
 echo "Waiting for Synology Photos database to start..."
-while ! sudo -u postgres psql; do
-    sleep 30
+while ! pg_isready; do
+    sleep 60
 done
 echo "Waiting for Synology Photos application to start..."
-while ! pgrep -f /var/packages/SynologyPhotos/target/usr/sbin/synofoto-task-center; do
-    sleep 30
+# we assume that any binary under the SynologyPhotos package is a good enough signal that Synology Photos has started
+while ! pgrep -f /var/packages/SynologyPhotos; do
+    # A generous duration to avoid starting indexing too early
+    sleep 300
 done
 
 for path in "${shared_space_path}" "${personal_space_path}"; do
     index_cmd="sudo /var/packages/SynologyPhotos/target/usr/bin/synofoto-bin-index-tool -t basic -i ${path}"
     echo "Starting indexing: ${index_cmd}"
     time $index_cmd
-echo "Finished with: $?"
+    echo "Finished with: $?"
 done
 
 echo "========================================"
