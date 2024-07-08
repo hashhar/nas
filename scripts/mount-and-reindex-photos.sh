@@ -57,14 +57,11 @@ while ! pgrep -f /var/packages/SynologyPhotos/target/usr/sbin/synofoto-task-cent
     sleep 30
 done
 
-readonly reindex_cmd="sudo /var/packages/SynologyPhotos/target/usr/bin/synofoto-bin-index-tool -t basic_reindex -i ${shared_space_path}"
-echo "Starting reindexing: ${reindex_cmd}"
-time $reindex_cmd
+for path in "${shared_space_path}" "${personal_space_path}"; do
+    index_cmd="sudo /var/packages/SynologyPhotos/target/usr/bin/synofoto-bin-index-tool -t basic -i ${path}"
+    echo "Starting indexing: ${index_cmd}"
+    time $index_cmd
 echo "Finished with: $?"
-
-readonly reindex_motion_cmd="sudo /var/packages/SynologyPhotos/target/usr/bin/synofoto-bin-index-tool -t update_metadata -o motion_photo -i ${shared_space_path}"
-echo "Starting regenerating motion photos: ${reindex_motion_cmd}"
-time $reindex_motion_cmd
-echo "Finished with: $?"
+done
 
 echo "========================================"
