@@ -7,14 +7,20 @@ echo "----------------------------------------"
 date --iso-8601=seconds
 echo "----------------------------------------"
 
-readonly sources=(
+readonly shared_sources=(
 '/volume1/data/Personal/Pictures/Synced/Camera Roll'
 '/volume1/data/Personal/Pictures/Synced/Camera Roll Archive'
 '/volume1/data/Personal/Pictures/Synced/Piglet'
 '/volume1/data/Personal/Pictures/Synced/Saved Pictures'
 '/volume1/data/Personal/Pictures/Synced/Screenshots'
 )
-readonly share_path='/volume1/photo'
+readonly shared_space_path='/volume1/photo'
+
+readonly personal_sources=(
+'/volume1/data/Personal/Pictures/Synced/Wallpapers'
+)
+readonly personal_space_path='/volume1/homes/hashhar/Photos'
+
 readonly marker_file='.stfolder'
 
 function mount_at_path() {
@@ -33,8 +39,12 @@ function mount_at_path() {
     fi
 }
 
-for source in "${sources[@]}"; do
-    mount_at_path "${source}" "${share_path}"
+for source in "${shared_sources[@]}"; do
+    mount_at_path "${source}" "${shared_space_path}"
+done
+
+for source in "${personal_sources[@]}"; do
+    mount_at_path "${source}" "${personal_space_path}"
 done
 
 # If running on boot then need to wait sometime for the Synology Photos database to be available
@@ -47,12 +57,12 @@ while ! pgrep -f /var/packages/SynologyPhotos/target/usr/sbin/synofoto-task-cent
     sleep 30
 done
 
-readonly reindex_cmd="sudo /var/packages/SynologyPhotos/target/usr/bin/synofoto-bin-index-tool -t basic_reindex -i ${share_path}"
+readonly reindex_cmd="sudo /var/packages/SynologyPhotos/target/usr/bin/synofoto-bin-index-tool -t basic_reindex -i ${shared_space_path}"
 echo "Starting reindexing: ${reindex_cmd}"
 time $reindex_cmd
 echo "Finished with: $?"
 
-readonly reindex_motion_cmd="sudo /var/packages/SynologyPhotos/target/usr/bin/synofoto-bin-index-tool -t update_metadata -o motion_photo -i ${share_path}"
+readonly reindex_motion_cmd="sudo /var/packages/SynologyPhotos/target/usr/bin/synofoto-bin-index-tool -t update_metadata -o motion_photo -i ${shared_space_path}"
 echo "Starting regenerating motion photos: ${reindex_motion_cmd}"
 time $reindex_motion_cmd
 echo "Finished with: $?"
