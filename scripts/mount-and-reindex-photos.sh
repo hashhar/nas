@@ -17,9 +17,12 @@ readonly sources=(
 readonly share_path='/volume1/photo'
 readonly marker_file='.stfolder'
 
-for source in "${sources[@]}"; do
+function mount_at_path() {
+    source="$1"
+    target="$2"
+
     mount_name="$(basename "${source}")"
-    mount_target="${share_path}/${mount_name}"
+    mount_target="${target}/${mount_name}"
     marker_path="${mount_target}/${marker_file}"
     if [[ -e "${marker_path}" ]]; then
         echo "${source} already mounted at ${mount_target}"
@@ -28,6 +31,10 @@ for source in "${sources[@]}"; do
         echo "Mounting ${source} at ${mount_target}"
         sudo mount --bind "${source}" "${mount_target}"
     fi
+}
+
+for source in "${sources[@]}"; do
+    mount_at_path "${source}" "${share_path}"
 done
 
 # If running on boot then need to wait sometime for the Synology Photos database to be available
