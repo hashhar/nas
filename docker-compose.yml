@@ -105,7 +105,7 @@ services:
       - PGID=$SYNCTHING_GID
     volumes:
       - $DOCKER_DATA/gallery-dl/data:/data
-      - $DATA_ROOT/Personal/Pictures/Synced/Wallpapers/.Fun:/download
+      - $DATA_ROOT/Personal/Pictures/Synced/Wallpapers/Fun:/download
     network_mode: "host"
     # this is expected to run and exit when done
     restart: "no"
