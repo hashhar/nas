@@ -79,7 +79,7 @@ Set up the groups and users as described below.
 
 | Name | Description | Read/Write | Read Only | No Access | Allow Apps | Deny Apps |
 |------|-------------|------------|-----------|-----------|------------|-----------|
-| `backup` | backup users | backups, docker | `*` | - | - | `*` |
+| `backup` | backup users | backups, docker | `*` | - | SMB | `*` |
 | `home` | home users | data | - | - | Cloud Sync, DSM, File Station, SMB, Synology Photos, Universal Search | `*` |
 | `service_ro` | read-only service accounts | docker | data | - | - | `*` |
 | `service_rw` | read-write service accounts | docker, data | - | - | - | `*` |
