@@ -1,0 +1,23 @@
+{
+    "extractor": {
+        "instagram": {
+            "directory": {
+                "subcategory == 'tagged'": [
+                    "{subcategory}",
+                    "{username}"
+                ],
+                "": [
+                    "{subcategory}"
+                ]
+            },
+            "api": "rest",
+            "include": [
+                "stories",
+                "highlights",
+                "avatar"
+            ],
+            "previews": true,
+            "videos": true
+        }
+    }
+}
