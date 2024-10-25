@@ -12,6 +12,7 @@ services:
       - PLEX_PORT=32400
       - QBITTORRENT_PORT=$QBITTORRENT_PORT
       - SYNCTHING_PORT=8384
+      - RESTIC_REST_SERVER_PORT=8000
       - HOST_ADDRESS=syno.hashhar.com # IP/port resolving to NAS - for connecting to containers using host networks
     volumes:
       - caddy_data:/data
@@ -109,6 +110,28 @@ services:
     network_mode: "host"
     # this is expected to run and exit when done
     restart: "no"
+
+  restic-rest-server:
+    depends_on:
+      - caddy
+    build:
+      context: restic-rest-server
+      args:
+        - VERSION=latest
+    image: hashhar/restic-rest-server:latest-0
+    container_name: restic-rest-server
+    environment:
+      - PUID=$RESTIC_UID
+      - PGID=$RESTIC_GID
+      # TLS is being provided via proxying through caddy
+      - OPTIONS=--append-only --private-repos --prometheus --prometheus-no-auth
+    volumes:
+      # /data is the default repo location in Docker image
+      - $RESTIC_ROOT/restic:/data
+    networks:
+      bridge:
+        ipv4_address: "172.18.0.6"
+    restart: unless-stopped
 
 networks:
   macvlan:

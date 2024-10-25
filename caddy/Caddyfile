@@ -32,6 +32,7 @@
 		~(plex)\..* "yes"
 		~(qbittorrent)\..* "yes"
 		~(syncthing)\..* "yes"
+		~(restic-rest-server)\..* "yes"
 
 		default "no"
 	}
@@ -44,6 +45,7 @@
 		import proxy-host "qbittorrent" "http://qbittorrent:{$QBITTORRENT_PORT}"
 		# syncthing is using host networking so we connect to the host itself
 		import proxy-host "syncthing" "http://{$HOST_ADDRESS}:{$SYNCTHING_PORT}"
+		import proxy-host "restic-rest-server" "http://restic-rest-server:{$RESTIC_REST_SERVER_PORT}"
 	}
 
 	metrics /metrics

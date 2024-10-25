@@ -555,6 +555,12 @@ You can generate the password hash for a given password using
 `qbittorrent/gen_password.py` script. Update the value for
 `WebUI\Password_PBKDF2` in `qBittorrent.conf` with the output of the script.
 
+### Restic Rest Server
+
+You need to create the username using the `create_user` script within the
+image. This will generate a `.htpasswd` file in the `$RESTIC_ROOT/restic`
+which you can then keep reusing.
+
 # Appendix
 
 ## Docker macvlan Networking
