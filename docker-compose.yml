@@ -12,7 +12,7 @@ services:
       - PLEX_PORT=32400
       - QBITTORRENT_PORT=$QBITTORRENT_PORT
       - SYNCTHING_PORT=8384
-      - RESTIC_REST_SERVER_PORT=8000
+      - RESTIC_REST_SERVER_PORT=$RESTIC_REST_SERVER_PORT
       - HOST_ADDRESS=syno.hashhar.com # IP/port resolving to NAS - for connecting to containers using host networks
     volumes:
       - caddy_data:/data
@@ -133,6 +133,23 @@ services:
         ipv4_address: "172.18.0.6"
     restart: unless-stopped
 
+  prometheus:
+    depends_on:
+      - caddy
+    build:
+      context: prometheus
+      args:
+        - VERSION=latest
+        - RESTIC_REST_SERVER_PORT=$RESTIC_REST_SERVER_PORT
+    image: hashhar/prometheus:latest-0
+    container_name: prometheus
+    volumes:
+      - prometheus_data:/prometheus
+    networks:
+      bridge:
+        ipv4_address: "172.18.0.7"
+    restart: unless-stopped
+
 networks:
   macvlan:
     driver: macvlan
@@ -150,3 +167,4 @@ networks:
 volumes:
   caddy_data:
   caddy_config:
+  prometheus_data:
