@@ -206,11 +206,11 @@ Set up a snapshot schedule as described below:
 
 | Name | Enabled | Days | Frequency | Retention |
 |------|---------|------|-----------|-----------|
-| `backups` | ✅ | Weekly | Every day | 6 monthly and 1 yearly with min 5 |
-| `data` | ✅ | Daily | Every day | Keep all for 1 day. 24 hourly, 7 daily, 2 weekly, 1 monthly and 1 yearly with min 5 |
-| `docker` | ✅ | Daily | Every 1 hour | Keep all for 1 day. 24 hourly, 7 daily, 2 weekly, 1 monthly and 1 yearly with min 5 |
+| `backups` | ✅ | Daily | Every day | Keep all for 1 day. 24 hourly, 7 daily, 2 weekly, 1 monthly and 1 yearly with min 5 |
+| `data` | ✅ | Daily | Every 1 hour | Keep all for 1 day. 168 hourly, 30 daily, 4 weekly, 12 monthly and 2 yearly with min 5 |
+| `docker` | ✅ | Daily | Every 1 hour | Keep all for 1 day. 168 hourly, 30 daily, 4 weekly, 12 monthly and 2 yearly with min 5 |
 | `git` | ✅ | Daily | Every day | Keep all for 1 day. 24 hourly, 7 daily, 2 weekly, 1 monthly and 1 yearly with min 5 |
-| `homes` | ✅ | Daily | Every 1 hour | Keep all for 1 day. 24 hourly, 7 daily, 2 weekly, 1 monthly and 1 yearly with min 5 |
+| `homes` | ✅ | Daily | Every 1 hour | Keep all for 1 day. 168 hourly, 30 daily, 4 weekly, 12 monthly and 2 yearly with min 5 |
 | `synology` | ✅ | Daily | Every day | Keep all for 1 day. 24 hourly, 7 daily, 2 weekly, 1 monthly and 1 yearly with min 5 |
 | `time_machine` | ✅ | Daily | Every day | Keep all for 1 day. 24 hourly, 7 daily, 2 weekly, 1 monthly and 1 yearly with min 5 |
 
