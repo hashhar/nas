@@ -40,9 +40,9 @@ Install the following apps:
 
 Create the following shares:
 
-| Name | Description | Hide | Recycle Bin | Checksum | Compresion |
+| Name | Description | Hide | Recycle Bin | Checksum | Compression |
 |------|-------------|:----:|:-----------:|:--------:|:----------:|
-| `backups` | backup target | ✅ | - | ✅ | ✅ |
+| `backups` | backup target | ✅ | - | ✅ | - |
 | `data` | all user data | - | ✅ | ✅ | - |
 | `docker` | docker containers | ✅ | - | ✅ | - |
 | `git` | git repositories | ✅ | - | ✅ | ✅ |
