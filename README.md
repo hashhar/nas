@@ -207,7 +207,7 @@ Set up a snapshot schedule as described below:
 | Name | Enabled | Days | Frequency | Retention |
 |------|---------|------|-----------|-----------|
 | `backups` | ✅ | Daily | Every day | Keep all for 1 day. 24 hourly, 7 daily, 2 weekly, 1 monthly and 1 yearly with min 5 |
-| `data` | ✅ | Daily | Every 1 hour | Keep all for 1 day. 168 hourly, 30 daily, 4 weekly, 12 monthly and 2 yearly with min 5 |
+| `data` | ✅ | Daily | Every 1 hour | Keep all for 1 day. 168 hourly, 30 daily, 52 weekly, 24 monthly and 2 yearly with min 5 |
 | `docker` | ✅ | Daily | Every 1 hour | Keep all for 1 day. 168 hourly, 30 daily, 4 weekly, 12 monthly and 2 yearly with min 5 |
 | `git` | ✅ | Daily | Every day | Keep all for 1 day. 24 hourly, 7 daily, 2 weekly, 1 monthly and 1 yearly with min 5 |
 | `homes` | ✅ | Daily | Every 1 hour | Keep all for 1 day. 168 hourly, 30 daily, 4 weekly, 12 monthly and 2 yearly with min 5 |
@@ -290,18 +290,17 @@ manually managed folders):
 │   │   └── _torrents
 │   ├── Music
 │   │   └── _torrents
+|   ├── Sports                         [5]
 │   ├── TV
 │   │   └── _torrents
-│   └── YouTube                        [5]
-│       └── _archive                   [6]
-├── Personal                           [7]
-│   ├── OneDrive                       [8]
+│   └── YouTube                        [6]
+│       └── _archive                   [7]
+├── Personal                           [8]
+│   ├── OneDrive                       [9]
 │   ├── Pictures
-│   │   ├── Manual                     [9]
-│   │   └── Synced                     [10]
-│   └── Software
-│       ├── Automatic                  [11]
-│       └── Manual                     [12]
+│   │   ├── Manual                     [10]
+│   │   └── Synced                     [11]
+│   └── Software                       [12]
 ├── Scratch                            [13]
 └── Staging
     ├── Torrents                       [14]
@@ -333,9 +332,10 @@ manually managed folders):
 > categories_csv='Books,Comics,Movies,Music,TV'
 > echo mkdir -p "$root"/Media/{$categories_csv}/_torrents "$root"/Staging/{Torrents/{$categories_csv},_torrents/{Completed,Watching/{$categories_csv}}}
 > # Execute the output of previous command
-> mkdir -p "$root"/Games/Steam
+> mkdir -p "$root"/Games/{Setups,Steam}
+> mkdir -p "$root"/Media/Sports
 > mkdir -p "$root"/{Media,Staging}/YouTube/_archive
-> mkdir -p "$root"/Personal/{Pictures/{Synced,Manual},Software/{Automatic,Manual}}
+> mkdir -p "$root"/Personal/{Pictures/{Synced,Manual},Software}
 > mkdir -p "$root"/Scratch
 >
 > # May want to instead let permissions get managed by apps themselves when
@@ -345,6 +345,7 @@ manually managed folders):
 > # Media
 > sudo chown -R arr:service_rw "$root"/Media
 > sudo chown -R ytdl:service_rw "$root"/Media/YouTube
+> sudo chown -R "$private_user":users "$root"/Media/Sports # over SMB group is always users
 > # Personal
 > sudo chown -R "$private_user":users "$root"/Personal # over SMB group is always users
 > sudo chown -R syncthing:service_rw "$root"/Personal/Pictures/Synced
@@ -367,17 +368,16 @@ manually managed folders):
 4.  `/Media/<category>/_torrents`: .torrent files for each category.  
     These are manually moved here to make sure we have the sources required to rebuild
     our media if needed.
-5.  `/Media/YouTube`: Downloaded YouTube channels, playlists or videos.  
-6.  `/Media/YouTube/_archive`: Archive files created by `yt-dlp`, scripts and `yt-dlp`
+5.  `/Media/Sports`: Downloaded sports matches and highlights.
+6.  `/Media/YouTube`: Downloaded YouTube channels, playlists or videos.  
+7.  `/Media/YouTube/_archive`: Archive files created by `yt-dlp`, scripts and `yt-dlp`
     config files used for a particular download.
 
-7.  `/Personal`: Manually managed personal data folder.
-8.  `/Personal/OneDrive`: A mirror of OneDrive maintained using CloudSync.
-9.  `/Personal/Pictures/Manual`: Manually managed pictures directory.
-10. `/Personal/Pictures/Synced`: Syncthing managed pictures directory.
-11. `/Personal/Software/Automatic`: Software downloaded and kept up to date
-    programmatically.
-12. `/Personal/Software/Manual`: Software downloaded and kept up to date manually.
+8.  `/Personal`: Manually managed personal data folder.
+9.  `/Personal/OneDrive`: A mirror of OneDrive maintained using CloudSync.
+10.  `/Personal/Pictures/Manual`: Manually managed pictures directory.
+11. `/Personal/Pictures/Synced`: Syncthing managed pictures directory.
+12. `/Personal/Software`: Software installers and archives including OS ISOs.
 
 13. `/Scratch`: This is a temporary workspace which can be used as needed.
 
