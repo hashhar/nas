@@ -233,6 +233,9 @@ Synology as an exit node for the Tailscale network.
 Also disable key expiry from machine settings for the node if there's a chance that
 you'll be unable to re-authenticate to Tailscale every 3 months.
 
+Follow the instructions at https://tailscale.com/kb/1131/synology#schedule-automatic-updates
+to schedule automatic updates.
+
 # Further Setup
 
 Once you've configured everything as needed on DSM we can move to configuring things for
