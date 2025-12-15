@@ -204,15 +204,19 @@ Enable archiving logs separately according to device.
 
 Set up a snapshot schedule as described below:
 
+Two configs:
+- Slow moving data: Daily snapshots for 24h-30d-4w-6m
+- Main data: Hourly snapshots for 168h-30d-12w-12m-1y
+
 | Name | Enabled | Days | Frequency | Retention |
 |------|---------|------|-----------|-----------|
-| `backups` | ✅ | Daily | Every day | Keep all for 1 day. 24 hourly, 7 daily, 2 weekly, 1 monthly and 1 yearly with min 5 |
-| `data` | ✅ | Daily | Every 1 hour | Keep all for 1 day. 168 hourly, 30 daily, 52 weekly, 24 monthly and 2 yearly with min 5 |
-| `docker` | ✅ | Daily | Every 1 hour | Keep all for 1 day. 168 hourly, 30 daily, 4 weekly, 12 monthly and 2 yearly with min 5 |
-| `git` | ✅ | Daily | Every day | Keep all for 1 day. 24 hourly, 7 daily, 2 weekly, 1 monthly and 1 yearly with min 5 |
-| `homes` | ✅ | Daily | Every 1 hour | Keep all for 1 day. 168 hourly, 30 daily, 4 weekly, 12 monthly and 2 yearly with min 5 |
-| `synology` | ✅ | Daily | Every day | Keep all for 1 day. 24 hourly, 7 daily, 2 weekly, 1 monthly and 1 yearly with min 5 |
-| `time_machine` | ✅ | Daily | Every day | Keep all for 1 day. 24 hourly, 7 daily, 2 weekly, 1 monthly and 1 yearly with min 5 |
+| `backups` | ✅ | Daily | Every day | Keep all for 1 day. 24 hourly, 30 daily, 4 weekly, 6 monthly and 0 yearly with min 5 |
+| `data` | ✅ | Daily | Every 1 hour | Keep all for 1 day. 168 hourly, 30 daily, 12 weekly, 12 monthly and 1 yearly with min 5 |
+| `docker` | ✅ | Daily | Every 1 hour | Keep all for 1 day. 168 hourly, 30 daily, 12 weekly, 12 monthly and 1 yearly with min 5 |
+| `git` | ✅ | Daily | Every day | Keep all for 1 day. 24 hourly, 30 daily, 4 weekly, 6 monthly and 0 yearly with min 5 |
+| `homes` | ✅ | Daily | Every 1 hour | Keep all for 1 day. 168 hourly, 30 daily, 12 weekly, 12 monthly and 1 yearly with min 5 |
+| `synology` | ✅ | Daily | Every day | Keep all for 1 day. 24 hourly, 30 daily, 4 weekly, 6 monthly and 0 yearly with min 5 |
+| `time_machine` | ✅ | Daily | Every day | Keep all for 1 day. 24 hourly, 30 daily, 4 weekly, 6 monthly and 0 yearly with min 5 |
 
 ## Storage Analyzer
 
