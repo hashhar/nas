@@ -4,7 +4,7 @@ services:
       context: caddy
       args:
         - VERSION=2
-    image: hashhar/caddy:2-1
+    image: hashhar/caddy:2-2
     container_name: caddy
     env_file:
       - caddy/secrets.env
@@ -148,6 +148,32 @@ services:
     networks:
       bridge:
         ipv4_address: "172.18.0.7"
+    restart: unless-stopped
+
+  scrutiny:
+    depends_on:
+      - caddy
+    image: ghcr.io/analogj/scrutiny:master-omnibus
+    container_name: scrutiny
+    volumes:
+      - /run/udev:/run/udev:ro
+      - $DOCKER_DATA/scrutiny/config:/opt/scrutiny/config
+      - $DOCKER_DATA/scrutiny/influxdb:/opt/scrutiny/influxdb
+    cap_add:
+      - SYS_RAWIO
+    devices:
+      - "/dev/sata1"
+      - "/dev/sata2"
+      - "/dev/sata3"
+      - "/dev/sata4"
+      - "/dev/sata5"
+      - "/dev/sata6"
+      - "/dev/sata7"
+      - "/dev/sata8"
+    networks:
+      bridge:
+        ipv4_address: "172.18.0.8"
+    # UI is exposed at 8080 and influxdb at 8086 through Caddy
     restart: unless-stopped
 
 networks:

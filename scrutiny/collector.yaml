@@ -1,0 +1,21 @@
+version: 1
+host:
+  id: "synology-ds1821+"
+
+devices:
+  - device: /dev/sata1
+    type: 'sat'
+  - device: /dev/sata2
+    type: 'sat'
+  - device: /dev/sata3
+    type: 'sat'
+  - device: /dev/sata4
+    type: 'sat'
+  - device: /dev/sata5
+    type: 'sat'
+  - device: /dev/sata6
+    type: 'sat'
+  - device: /dev/sata7
+    type: 'sat'
+  - device: /dev/sata8
+    type: 'sat'

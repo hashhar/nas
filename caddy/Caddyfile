@@ -57,6 +57,8 @@ http://caddy:80 {
 		~(syncthing)\..* "yes"
 		~(restic-rest-server)\..* "yes"
 		~(prometheus)\..* "yes"
+		~(scrutiny)\..* "yes"
+		~(scrutiny-influx)\..* "yes"
 
 		default "no"
 	}
@@ -71,5 +73,7 @@ http://caddy:80 {
 		import proxy-host "syncthing" "http://{$HOST_ADDRESS}:{$SYNCTHING_PORT}"
 		import proxy-host "restic-rest-server" "http://restic-rest-server:{$RESTIC_REST_SERVER_PORT}"
 		import proxy-host "prometheus" "http://prometheus:9090"
+		import proxy-host "scrutiny" "http://scrutiny:8080"
+		import proxy-host "scrutiny-influx" "http://scrutiny:8086"
 	}
 }
