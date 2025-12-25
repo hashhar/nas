@@ -124,7 +124,7 @@ services:
       - PUID=$RESTIC_UID
       - PGID=$RESTIC_GID
       # TLS is being provided via proxying through caddy
-      - OPTIONS=--append-only --private-repos --prometheus --prometheus-no-auth
+      - OPTIONS=--append-only --group-accessible-repos --private-repos --prometheus --prometheus-no-auth
     volumes:
       # /data is the default repo location in Docker image
       - $RESTIC_ROOT/restic:/data
