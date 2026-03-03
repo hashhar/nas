@@ -565,15 +565,25 @@ Both `immich-server` (reads `DB_PASSWORD`) and `immich-database` (reads `POSTGRE
 
 **Remote ML workers:**
 
-The NAS (DS1821+) is underpowered for ML. Instead, run ML workers on more capable machines (Desktop, MacBook) using:
+The NAS (DS1821+) is underpowered for ML. Instead, run ML workers on more capable machines using the compose files in `immich/`:
+
+- **CPU-only** (macOS / Linux): `immich/docker-compose.remote-ml.yml`
+- **NVIDIA CUDA** (Windows WSL2 / Linux with NVIDIA GPU): `immich/docker-compose.remote-ml-cuda.yml`
 
 ```sh
+# CPU-only (e.g. MacBook)
 docker compose -f immich/docker-compose.remote-ml.yml up -d
+
+# NVIDIA CUDA (e.g. Windows Desktop with RTX 4090 via WSL2)
+# Prerequisites: Docker Desktop with WSL2 backend, NVIDIA driver 545+
+docker compose -f immich/docker-compose.remote-ml-cuda.yml up -d
 ```
 
+Verify CUDA is active by checking container logs for `CUDAExecutionProvider`.
+
 In Immich admin UI (Administration → Machine Learning Settings), add ML worker URLs with fallback order:
-1. `http://<desktop-ip>:3003` (primary)
-2. `http://<macbook-ip>:3003` (fallback)
+1. `http://<desktop-ip>:3003` (primary — CUDA-accelerated)
+2. `http://<macbook-ip>:3003` (fallback — CPU-only)
 
 If the primary is offline, Immich falls back to the next URL. If all workers are offline, Immich works normally but smart search and face detection are unavailable until a worker comes online.
 
