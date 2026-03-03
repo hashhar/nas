@@ -200,6 +200,7 @@ services:
     volumes:
       - $DOCKER_DATA/immich/upload:/data
       - /etc/localtime:/etc/localtime:ro
+      - /volume1/data/Personal/Pictures/Synced/Wallpapers:/mnt/wallpapers
     healthcheck:
       disable: false
     networks:
