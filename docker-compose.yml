@@ -13,6 +13,7 @@ services:
       - QBITTORRENT_PORT=$QBITTORRENT_PORT
       - SYNCTHING_PORT=8384
       - RESTIC_REST_SERVER_PORT=$RESTIC_REST_SERVER_PORT
+      - IMMICH_PORT=$IMMICH_PORT
       - HOST_ADDRESS=syno.hashhar.com # IP/port resolving to NAS - for connecting to containers using host networks
     volumes:
       - caddy_data:/data
@@ -176,6 +177,66 @@ services:
     # UI is exposed at 8080 and influxdb at 8086 through Caddy
     restart: unless-stopped
 
+  immich-server:
+    depends_on:
+      caddy:
+        condition: service_started
+      immich-redis:
+        condition: service_healthy
+      immich-database:
+        condition: service_healthy
+    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}
+    container_name: immich-server
+    user: "$IMMICH_UID:$IMMICH_GID"
+    environment:
+      - DB_HOSTNAME=immich-database
+      - DB_USERNAME=postgres
+      - DB_DATABASE_NAME=immich
+      - REDIS_HOSTNAME=immich-redis
+      - IMMICH_TRUSTED_PROXIES=172.18.0.3
+      - TZ=$TZ
+    env_file:
+      - immich/secrets.env
+    volumes:
+      - $DOCKER_DATA/immich/upload:/data
+      - /etc/localtime:/etc/localtime:ro
+    healthcheck:
+      disable: false
+    networks:
+      bridge:
+        ipv4_address: "172.18.0.9"
+    restart: unless-stopped
+
+  immich-redis:
+    image: valkey/valkey:9-alpine
+    container_name: immich-redis
+    healthcheck:
+      test: redis-cli ping || exit 1
+    networks:
+      bridge:
+        ipv4_address: "172.18.0.10"
+    restart: unless-stopped
+
+  immich-database:
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0
+    container_name: immich-database
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: immich
+      POSTGRES_INITDB_ARGS: '--data-checksums'
+      DB_STORAGE_TYPE: 'HDD'
+    env_file:
+      - immich/secrets.env
+    volumes:
+      - immich_postgres_data:/var/lib/postgresql/data
+    shm_size: 128mb
+    healthcheck:
+      disable: false
+    networks:
+      bridge:
+        ipv4_address: "172.18.0.11"
+    restart: unless-stopped
+
 networks:
   macvlan:
     driver: macvlan
@@ -194,3 +255,4 @@ volumes:
   caddy_data:
   caddy_config:
   prometheus_data:
+  immich_postgres_data:

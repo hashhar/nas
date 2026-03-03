@@ -59,6 +59,7 @@ http://caddy:80 {
 		~(prometheus)\..* "yes"
 		~(scrutiny)\..* "yes"
 		~(scrutiny-influx)\..* "yes"
+		~(immich)\..* "yes"
 
 		default "no"
 	}
@@ -75,5 +76,6 @@ http://caddy:80 {
 		import proxy-host "prometheus" "http://prometheus:9090"
 		import proxy-host "scrutiny" "http://scrutiny:8080"
 		import proxy-host "scrutiny-influx" "http://scrutiny:8086"
+		import proxy-host "immich" "http://immich-server:{$IMMICH_PORT}"
 	}
 }

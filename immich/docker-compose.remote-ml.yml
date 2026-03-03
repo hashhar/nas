@@ -1,0 +1,12 @@
+name: immich_remote_ml
+services:
+  immich-machine-learning:
+    container_name: immich_machine_learning
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}
+    volumes:
+      - model-cache:/cache
+    restart: unless-stopped
+    ports:
+      - 3003:3003
+volumes:
+  model-cache:

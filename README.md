@@ -94,6 +94,7 @@ Set up the groups and users as described below.
 | `arr` | *arr applications | `service_rw` | - | - | - | - | - |
 | `qbittorrent` | qbittorrent | `service_rw` | - | - | - | - | - |
 | `syncthing` | syncthing | `service_rw` | - | - | - | - | - |
+| `immich` | immich | `service_rw` | - | - | - | - | - |
 | `time_machine` | apple time machine | `time_machine` | - | - | - | - | - |
 | `ytdl` | youtube dl | `service_rw` | - | - | - | - | - |
 | `<your_user>` | <your_user> | `<your_user>` | - | - | - | - | - |
@@ -541,6 +542,52 @@ You can generate the password hash for a given password using
 You need to create the username using the `create_user` script within the
 image. This will generate a `.htpasswd` file in the `$RESTIC_ROOT/restic`
 which you can then keep reusing.
+
+### Immich
+
+Immich is a photo/video management app. It runs alongside the existing Syncthing-based photo sync workflow as an independent system with its own managed uploads.
+
+**Architecture:**
+- `immich-server` — main application (web UI, API, mobile app backend)
+- `immich-redis` — cache and job queue
+- `immich-database` — PostgreSQL with pgvecto.rs for vector search
+
+**Secrets setup:**
+
+Create `immich/secrets.env` with a shared database password:
+
+```env
+DB_PASSWORD=<random alphanumeric>
+POSTGRES_PASSWORD=<same value as DB_PASSWORD>
+```
+
+Both `immich-server` (reads `DB_PASSWORD`) and `immich-database` (reads `POSTGRES_PASSWORD`) share this file. The values must match.
+
+**Remote ML workers:**
+
+The NAS (DS1821+) is underpowered for ML. Instead, run ML workers on more capable machines (Desktop, MacBook) using:
+
+```sh
+docker compose -f immich/docker-compose.remote-ml.yml up -d
+```
+
+In Immich admin UI (Administration → Machine Learning Settings), add ML worker URLs with fallback order:
+1. `http://<desktop-ip>:3003` (primary)
+2. `http://<macbook-ip>:3003` (fallback)
+
+If the primary is offline, Immich falls back to the next URL. If all workers are offline, Immich works normally but smart search and face detection are unavailable until a worker comes online.
+
+**Post-deployment configuration:**
+
+1. Access `immich.nas.hashhar.com` and create an admin account
+2. In Administration → Storage Template, configure readable file paths (e.g. `{y}/{y}-{MM}/{filename}`)
+3. Configure ML worker URLs as described above
+4. Install the Immich mobile app and connect to `https://immich.nas.hashhar.com`
+5. Enable backup in the mobile app to start uploading new photos
+
+**Future: adding existing photos**
+
+Once satisfied with Immich, you can add existing Syncthing-managed photos via an External Library pointing at the existing filesystem. This is read-only and non-destructive — Immich indexes but doesn't move or modify the originals.
 
 # Appendix
 
