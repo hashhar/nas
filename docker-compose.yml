@@ -2,9 +2,7 @@ services:
   caddy:
     build:
       context: caddy
-      args:
-        - VERSION=2
-    image: hashhar/caddy:2-2
+    image: hashhar/caddy:local
     container_name: caddy
     env_file:
       - caddy/secrets.env
@@ -56,10 +54,9 @@ services:
     build:
       context: qbittorrent
       args:
-        - VERSION=latest
         - LISTENING_PORT=$QBITTORRENT_LISTENING_PORT
         - DATA_ROOT
-    image: hashhar/qbittorrent:latest-0
+    image: hashhar/qbittorrent:local
     container_name: qbittorrent
     environment:
       - PUID=$QBITTORRENT_UID
@@ -80,7 +77,7 @@ services:
   syncthing:
     depends_on:
       - caddy
-    image: syncthing/syncthing:latest
+    image: syncthing/syncthing:2.0.15
     container_name: syncthing
     hostname: Radon # name of syncthing instance
     environment:
@@ -117,9 +114,7 @@ services:
       - caddy
     build:
       context: restic-rest-server
-      args:
-        - VERSION=latest
-    image: hashhar/restic-rest-server:latest-0
+    image: hashhar/restic-rest-server:local
     container_name: restic-rest-server
     environment:
       - PUID=$RESTIC_UID
@@ -140,9 +135,8 @@ services:
     build:
       context: prometheus
       args:
-        - VERSION=latest
         - RESTIC_REST_SERVER_PORT=$RESTIC_REST_SERVER_PORT
-    image: hashhar/prometheus:latest-0
+    image: hashhar/prometheus:local
     container_name: prometheus
     volumes:
       - prometheus_data:/prometheus
@@ -153,7 +147,7 @@ services:
 
 
   smartctl-exporter:
-    image: prometheuscommunity/smartctl-exporter:latest
+    image: prometheuscommunity/smartctl-exporter:v0.14.0
     container_name: smartctl-exporter
     # Image defaults to nobody but /dev/sata* are brw------- root:root
     user: "root"
@@ -185,7 +179,7 @@ services:
     restart: unless-stopped
 
   node-exporter:
-    image: prom/node-exporter:latest
+    image: prom/node-exporter:v1.10.2
     container_name: node-exporter
     pid: "host"
     volumes:
@@ -210,7 +204,7 @@ services:
         condition: service_healthy
       immich-database:
         condition: service_healthy
-    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}
+    image: ghcr.io/immich-app/immich-server:v2.5.6
     container_name: immich-server
     user: "$IMMICH_UID:$IMMICH_GID"
     environment:
@@ -235,7 +229,7 @@ services:
     restart: unless-stopped
 
   immich-machine-learning:
-    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}
+    image: ghcr.io/immich-app/immich-machine-learning:v2.5.6
     container_name: immich-machine-learning
     volumes:
       - immich_model_cache:/cache

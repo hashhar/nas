@@ -1,7 +1,6 @@
-ARG VERSION
 ARG CONFIG=/data/config
 
-FROM alpine:latest AS builder
+FROM alpine:3.23 AS builder
 
 ARG DATA_ROOT
 ARG LISTENING_PORT
@@ -19,7 +18,7 @@ RUN mkdir -p ${CONFIG} \
   && envsubst '${TORRENT_ROOT}' < ./categories.json > ${CONFIG}/categories.json \
   && envsubst '${TORRENT_ROOT}' < ./watched_folders.json > ${CONFIG}/watched_folders.json
 
-FROM lscr.io/linuxserver/qbittorrent:${VERSION}
+FROM lscr.io/linuxserver/qbittorrent:5.1.4
 
 RUN apk add --no-cache rsync
 

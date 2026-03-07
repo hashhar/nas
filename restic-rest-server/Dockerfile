@@ -1,6 +1,4 @@
-ARG VERSION
-
-FROM restic/rest-server:${VERSION}
+FROM restic/rest-server:0.14.0
 
 RUN apk add --no-cache su-exec
 
