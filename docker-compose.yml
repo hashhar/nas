@@ -145,6 +145,38 @@ services:
         ipv4_address: "172.18.0.7"
     restart: unless-stopped
 
+  grafana:
+    depends_on:
+      - caddy
+      - prometheus
+    image: grafana/grafana:12.4.0
+    container_name: grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/etc/grafana/dashboards:ro
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      # Password set via secrets.env
+      - GF_SERVER_ROOT_URL=https://grafana.nas.hashhar.com
+    env_file:
+      - grafana/secrets.env
+    networks:
+      bridge:
+        ipv4_address: "172.18.0.15"
+    restart: unless-stopped
+
+  alertmanager:
+    build:
+      context: alertmanager
+    image: hashhar/alertmanager:local
+    container_name: alertmanager
+    env_file:
+      - alertmanager/secrets.env
+    networks:
+      bridge:
+        ipv4_address: "172.18.0.16"
+    restart: unless-stopped
 
   smartctl-exporter:
     image: prometheuscommunity/smartctl-exporter:v0.14.0
@@ -286,5 +318,6 @@ volumes:
   caddy_data:
   caddy_config:
   prometheus_data:
+  grafana_data:
   immich_postgres_data:
   immich_model_cache:

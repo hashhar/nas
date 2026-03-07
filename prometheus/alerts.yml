@@ -1,0 +1,56 @@
+groups:
+  - name: disk_health
+    rules:
+      - alert: SmartDiskUnhealthy
+        expr: smartctl_device_smart_status != 1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Disk {{ $labels.device }} SMART status unhealthy"
+
+      - alert: SmartTemperatureHigh
+        expr: smartctl_device_temperature > 45
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disk {{ $labels.device }} temperature {{ $value }}°C"
+
+  - name: raid_health
+    rules:
+      - alert: RaidDegraded
+        expr: node_md_disks{state="active"} < node_md_disks_required
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "RAID array {{ $labels.device }} degraded"
+
+  - name: filesystem
+    rules:
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.15
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Filesystem {{ $labels.mountpoint }} has {{ $value | humanizePercentage }} free"
+
+      - alert: DiskSpaceCritical
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Filesystem {{ $labels.mountpoint }} has {{ $value | humanizePercentage }} free"
+
+  - name: service_health
+    rules:
+      - alert: TargetDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Prometheus target {{ $labels.job }} is down"

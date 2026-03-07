@@ -543,6 +543,29 @@ You need to create the username using the `create_user` script within the
 image. This will generate a `.htpasswd` file in the `$RESTIC_ROOT/restic`
 which you can then keep reusing.
 
+### Grafana
+
+Create `grafana/secrets.env` with an admin password:
+
+```env
+GF_SECURITY_ADMIN_PASSWORD=<your-chosen-password>
+```
+
+### Alertmanager
+
+Alertmanager sends alerts via Gmail SMTP using an App Password (not your regular account password).
+
+1. Go to [myaccount.google.com](https://myaccount.google.com) → Security → 2-Step Verification → App passwords
+2. Create a new app password named `Alertmanager` and copy the 16-character code
+
+Create `alertmanager/secrets.env`:
+
+```env
+SMTP_FROM=your-gmail@gmail.com
+SMTP_PASSWORD=abcd-efgh-ijkl-mnop
+ALERT_EMAIL_TO=your-email@example.com
+```
+
 ### Immich
 
 Create `immich/secrets.env` with a shared database password:

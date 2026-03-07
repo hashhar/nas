@@ -58,6 +58,7 @@ http://caddy:80 {
 		~(restic-rest-server)\..* "yes"
 		~(prometheus)\..* "yes"
 		~(immich)\..* "yes"
+		~(grafana)\..* "yes"
 
 		default "no"
 	}
@@ -73,5 +74,6 @@ http://caddy:80 {
 		import proxy-host "restic-rest-server" "http://restic-rest-server:{$RESTIC_REST_SERVER_PORT}"
 		import proxy-host "prometheus" "http://prometheus:9090"
 		import proxy-host "immich" "http://immich-server:{$IMMICH_PORT}"
+		import proxy-host "grafana" "http://grafana:3000"
 	}
 }
