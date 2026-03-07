@@ -545,23 +545,12 @@ which you can then keep reusing.
 
 ### Immich
 
-Immich is a photo/video management app. It runs alongside the existing Syncthing-based photo sync workflow as an independent system with its own managed uploads.
-
-**Architecture:**
-- `immich-server` — main application (web UI, API, mobile app backend)
-- `immich-redis` — cache and job queue
-- `immich-database` — PostgreSQL with pgvecto.rs for vector search
-
-**Secrets setup:**
-
 Create `immich/secrets.env` with a shared database password:
 
 ```env
 DB_PASSWORD=<random alphanumeric>
 POSTGRES_PASSWORD=<same value as DB_PASSWORD>
 ```
-
-Both `immich-server` (reads `DB_PASSWORD`) and `immich-database` (reads `POSTGRES_PASSWORD`) share this file. The values must match.
 
 **Remote ML workers:**
 
@@ -572,32 +561,26 @@ The NAS (DS1821+) is underpowered for ML. Instead, run ML workers on more capabl
 
 ```sh
 # CPU-only (e.g. MacBook)
-docker compose -f immich/docker-compose.remote-ml.yml up -d
+# MacBook CPU: 1-2 workers
+MACHINE_LEARNING_WORKERS=2 docker compose -f immich/docker-compose.remote-ml.yml up -d
 
 # NVIDIA CUDA (e.g. Windows Desktop with RTX 4090 via WSL2)
 # Prerequisites: Docker Desktop with WSL2 backend, NVIDIA driver 545+
-docker compose -f immich/docker-compose.remote-ml-cuda.yml up -d
-```
-
-Verify CUDA is active by checking container logs for `CUDAExecutionProvider`.
-
-To run multiple ML workers (useful on machines with powerful GPUs or multi-core CPUs), set `MACHINE_LEARNING_WORKERS` at launch:
-
-```sh
 # RTX 4090 can comfortably do 2-4 workers
 MACHINE_LEARNING_WORKERS=3 docker compose -f immich/docker-compose.remote-ml-cuda.yml up -d
-
-# MacBook CPU: 1-2 workers
-MACHINE_LEARNING_WORKERS=2 docker compose -f immich/docker-compose.remote-ml.yml up -d
 ```
 
 Default is 1 worker. This is not stored in `.env` since it varies per machine.
+Verify CUDA is active by checking container logs for `CUDAExecutionProvider`.
 
 In Immich admin UI (Administration → Machine Learning Settings), add ML worker URLs with fallback order:
 1. `http://<desktop-ip>:3003` (primary — CUDA-accelerated)
 2. `http://<macbook-ip>:3003` (fallback — CPU-only)
+3. `http://immich-machine-learning:3003` (last resort — NAS-local, slow)
 
-If the primary is offline, Immich falls back to the next URL. If all workers are offline, Immich works normally but smart search and face detection are unavailable until a worker comes online.
+`immich-machine-learning` resolves via Docker's internal DNS from `immich-server` (same bridge network) — no IP needed.
+
+If the primary is offline, Immich falls back to the next URL. The NAS-local worker ensures ML is always available even when all remote machines are offline.
 
 **Post-deployment configuration:**
 
@@ -606,26 +589,9 @@ If the primary is offline, Immich falls back to the next URL. If all workers are
    `{{y}}/{{#if album}}{{{album}}}{{else}}{{MM}}{{/if}}/{{{filename}}}`
    (organises by year, then album name if set, otherwise by month)
 3. Configure ML worker URLs as described above
-4. Install the Immich mobile app and connect to `https://immich.nas.hashhar.com`
-5. Photos are synced to the NAS via Syncthing — do **not** enable in-app backup
-
-**External libraries (existing photos):**
-
-External libraries let Immich index photos that live on the filesystem (e.g. Syncthing-managed folders) without copying them. Managed uploads (phone → Immich) work alongside external libraries.
-
-The `immich-server` container mounts `$DATA_ROOT/Personal/Pictures/Synced` at the same path inside the container (following the existing convention used by Plex, qBittorrent, and Syncthing). This means any subfolder can be added as an external library import path without compose changes.
-
-Key behaviors:
-
-- **Sync is scan-based** — scheduled nightly + manual trigger, not real-time.
-- **Synology exclusion pattern** — add `**/@eaDir/**` to exclusion patterns on all external libraries to skip Synology thumbnail directories.
-- **Delete from filesystem** (Sponge, file manager, etc.) → Immich trashes the asset on next scan → permanent after 30 days.
-- **Delete from Immich UI** → file is deleted from disk immediately (mount is read-write).
-- **Move/rename files** → Immich treats as a new asset; all metadata (albums, favorites, face tags, descriptions) is **permanently lost** — avoid this.
-- **Non-image files** (text, scripts, etc.) alongside photos are ignored by Immich.
-- **XMP sidecars** are read automatically; with the rw mount, metadata edits write back to XMP.
-- **No automatic folder-to-album mapping** — albums are created manually in the UI.
-- Each external library is **owned by a single user**.
+4. Create a dedicated user for each user, do not use admin user
+5. Install the Immich mobile app and connect to `https://immich.nas.hashhar.com`
+6. Photos are synced to the NAS via Syncthing — do **not** enable in-app backup
 
 To add an external library: Administration → External Libraries → Create, then set the import path (e.g. `/volume1/data/Personal/Pictures/Synced/Wallpapers`).
 

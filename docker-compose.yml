@@ -208,6 +208,16 @@ services:
         ipv4_address: "172.18.0.9"
     restart: unless-stopped
 
+  immich-machine-learning:
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}
+    container_name: immich-machine-learning
+    volumes:
+      - immich_model_cache:/cache
+    networks:
+      bridge:
+        ipv4_address: "172.18.0.12"
+    restart: unless-stopped
+
   immich-redis:
     image: valkey/valkey:9-alpine
     container_name: immich-redis
@@ -257,3 +267,4 @@ volumes:
   caddy_config:
   prometheus_data:
   immich_postgres_data:
+  immich_model_cache:
