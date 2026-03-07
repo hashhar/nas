@@ -586,8 +586,8 @@ If the primary is offline, Immich falls back to the next URL. The NAS-local work
 
 1. Access `immich.nas.hashhar.com` and create an admin account
 2. In Administration → Storage Template, enable and set template to:
-   `{{y}}/{{#if album}}{{{album}}}{{else}}{{MM}}{{/if}}/{{{filename}}}`
-   (organises by year, then album name if set, otherwise by month)
+   `{{y}}/{{#if album}}{{{album}}}{{else}}{{y}} - {{MM}}{{/if}}/{{{filename}}}`
+   (organises by year, then album name if set, otherwise by year-month)
 3. Configure ML worker URLs as described above
 4. Create a dedicated user for each user, do not use admin user
 5. Install the Immich mobile app and connect to `https://immich.nas.hashhar.com`
