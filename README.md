@@ -581,6 +581,18 @@ docker compose -f immich/docker-compose.remote-ml-cuda.yml up -d
 
 Verify CUDA is active by checking container logs for `CUDAExecutionProvider`.
 
+To run multiple ML workers (useful on machines with powerful GPUs or multi-core CPUs), set `MACHINE_LEARNING_WORKERS` at launch:
+
+```sh
+# RTX 4090 can comfortably do 2-4 workers
+MACHINE_LEARNING_WORKERS=3 docker compose -f immich/docker-compose.remote-ml-cuda.yml up -d
+
+# MacBook CPU: 1-2 workers
+MACHINE_LEARNING_WORKERS=2 docker compose -f immich/docker-compose.remote-ml.yml up -d
+```
+
+Default is 1 worker. This is not stored in `.env` since it varies per machine.
+
 In Immich admin UI (Administration → Machine Learning Settings), add ML worker URLs with fallback order:
 1. `http://<desktop-ip>:3003` (primary — CUDA-accelerated)
 2. `http://<macbook-ip>:3003` (fallback — CPU-only)
@@ -590,14 +602,32 @@ If the primary is offline, Immich falls back to the next URL. If all workers are
 **Post-deployment configuration:**
 
 1. Access `immich.nas.hashhar.com` and create an admin account
-2. In Administration → Storage Template, configure readable file paths (e.g. `{y}/{y}-{MM}/{filename}`)
+2. In Administration → Storage Template, enable and set template to:
+   `{{y}}/{{#if album}}{{{album}}}{{else}}{{MM}}{{/if}}/{{{filename}}}`
+   (organises by year, then album name if set, otherwise by month)
 3. Configure ML worker URLs as described above
 4. Install the Immich mobile app and connect to `https://immich.nas.hashhar.com`
-5. Enable backup in the mobile app to start uploading new photos
+5. Photos are synced to the NAS via Syncthing — do **not** enable in-app backup
 
-**Future: adding existing photos**
+**External libraries (existing photos):**
 
-Once satisfied with Immich, you can add existing Syncthing-managed photos via an External Library pointing at the existing filesystem. This is read-only and non-destructive — Immich indexes but doesn't move or modify the originals.
+External libraries let Immich index photos that live on the filesystem (e.g. Syncthing-managed folders) without copying them. Managed uploads (phone → Immich) work alongside external libraries.
+
+The `immich-server` container mounts `$DATA_ROOT/Personal/Pictures/Synced` at the same path inside the container (following the existing convention used by Plex, qBittorrent, and Syncthing). This means any subfolder can be added as an external library import path without compose changes.
+
+Key behaviors:
+
+- **Sync is scan-based** — scheduled nightly + manual trigger, not real-time.
+- **Synology exclusion pattern** — add `**/@eaDir/**` to exclusion patterns on all external libraries to skip Synology thumbnail directories.
+- **Delete from filesystem** (Sponge, file manager, etc.) → Immich trashes the asset on next scan → permanent after 30 days.
+- **Delete from Immich UI** → file is deleted from disk immediately (mount is read-write).
+- **Move/rename files** → Immich treats as a new asset; all metadata (albums, favorites, face tags, descriptions) is **permanently lost** — avoid this.
+- **Non-image files** (text, scripts, etc.) alongside photos are ignored by Immich.
+- **XMP sidecars** are read automatically; with the rw mount, metadata edits write back to XMP.
+- **No automatic folder-to-album mapping** — albums are created manually in the UI.
+- Each external library is **owned by a single user**.
+
+To add an external library: Administration → External Libraries → Create, then set the import path (e.g. `/volume1/data/Personal/Pictures/Synced/Wallpapers`).
 
 # Appendix
 
