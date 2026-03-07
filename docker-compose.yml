@@ -151,15 +151,12 @@ services:
         ipv4_address: "172.18.0.7"
     restart: unless-stopped
 
-  scrutiny:
-    depends_on:
-      - caddy
-    image: ghcr.io/analogj/scrutiny:master-omnibus
-    container_name: scrutiny
-    volumes:
-      - /run/udev:/run/udev:ro
-      - $DOCKER_DATA/scrutiny/config:/opt/scrutiny/config
-      - $DOCKER_DATA/scrutiny/influxdb:/opt/scrutiny/influxdb
+
+  smartctl-exporter:
+    image: prometheuscommunity/smartctl-exporter:latest
+    container_name: smartctl-exporter
+    # Image defaults to nobody but /dev/sata* are brw------- root:root
+    user: "root"
     cap_add:
       - SYS_RAWIO
     devices:
@@ -171,10 +168,38 @@ services:
       - "/dev/sata6"
       - "/dev/sata7"
       - "/dev/sata8"
+    # No udev inside the container so `smartctl --scan` auto-discovery finds nothing;
+    # devices must be listed explicitly
+    command:
+      - "--smartctl.device=/dev/sata1"
+      - "--smartctl.device=/dev/sata2"
+      - "--smartctl.device=/dev/sata3"
+      - "--smartctl.device=/dev/sata4"
+      - "--smartctl.device=/dev/sata5"
+      - "--smartctl.device=/dev/sata6"
+      - "--smartctl.device=/dev/sata7"
+      - "--smartctl.device=/dev/sata8"
     networks:
       bridge:
-        ipv4_address: "172.18.0.8"
-    # UI is exposed at 8080 and influxdb at 8086 through Caddy
+        ipv4_address: "172.18.0.13"
+    restart: unless-stopped
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    pid: "host"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+      - "--collector.filesystem.mount-points-exclude=^/(dev|proc|sys|run|snap)($|/)"
+    networks:
+      bridge:
+        ipv4_address: "172.18.0.14"
     restart: unless-stopped
 
   immich-server:
@@ -194,6 +219,7 @@ services:
       - DB_DATABASE_NAME=immich
       - REDIS_HOSTNAME=immich-redis
       - IMMICH_TRUSTED_PROXIES=172.18.0.3
+      - IMMICH_TELEMETRY_INCLUDE=all
       - TZ=$TZ
     env_file:
       - immich/secrets.env
