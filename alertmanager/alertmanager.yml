@@ -17,3 +17,5 @@ receivers:
     email_configs:
       - to: '${ALERT_EMAIL_TO}'
         send_resolved: true
+        headers:
+          Subject: '[Alertmanager radon] {{ template "email.default.subject" . }}'
