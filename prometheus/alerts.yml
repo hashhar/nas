@@ -30,7 +30,7 @@ groups:
   - name: filesystem
     rules:
       - alert: DiskSpaceLow
-        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.15
+        expr: (node_filesystem_avail_bytes{fstype!~"tmpfs|devtmpfs|overlay|squashfs|rootfs"} / node_filesystem_size_bytes{fstype!~"tmpfs|devtmpfs|overlay|squashfs|rootfs"}) < 0.15
         for: 5m
         labels:
           severity: warning
@@ -38,7 +38,7 @@ groups:
           summary: "Filesystem {{ $labels.mountpoint }} has {{ $value | humanizePercentage }} free"
 
       - alert: DiskSpaceCritical
-        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.05
+        expr: (node_filesystem_avail_bytes{fstype!~"tmpfs|devtmpfs|overlay|squashfs|rootfs"} / node_filesystem_size_bytes{fstype!~"tmpfs|devtmpfs|overlay|squashfs|rootfs"}) < 0.05
         for: 5m
         labels:
           severity: critical
