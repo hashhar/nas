@@ -11,4 +11,4 @@ FROM prom/prometheus:v3.10.0
 COPY --from=builder prometheus.yml /etc/prometheus/prometheus.yml
 COPY alerts.yml /etc/prometheus/alerts.yml
 
-CMD [ "--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/prometheus", "--storage.tsdb.retention.time=90d" ]
+CMD [ "--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/prometheus" ]
