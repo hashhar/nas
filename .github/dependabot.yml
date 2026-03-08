@@ -18,4 +18,5 @@ updates:
     schedule:
       interval: "weekly"
     ignore:
+      - dependency-name: "hashhar/*"
       - dependency-name: "ghcr.io/immich-app/postgres"
