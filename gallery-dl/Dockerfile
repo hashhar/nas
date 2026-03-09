@@ -1,7 +1,5 @@
 FROM python:3.14-alpine
 
-ARG DATA_ROOT
-
 WORKDIR /download
 
 RUN apk add --no-cache su-exec yt-dlp ffmpeg \
@@ -11,6 +9,5 @@ RUN apk add --no-cache su-exec yt-dlp ffmpeg \
 ENV PUID=1000 PGID=1000 HOME=/var/gallery-dl
 
 COPY entrypoint.sh /entrypoint.sh
-COPY config/* "$HOME"/.config/gallery-dl/
 
 ENTRYPOINT [ "/entrypoint.sh", "gallery-dl" ]

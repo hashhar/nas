@@ -106,6 +106,7 @@ services:
       - PUID=$SYNCTHING_UID
       - PGID=$SYNCTHING_GID
     volumes:
+      - ./gallery-dl/config:/var/gallery-dl/.config/gallery-dl:ro
       - $DOCKER_DATA/gallery-dl/data:/data
       - $DATA_ROOT/Personal/Pictures/Synced/Wallpapers/Fun:/download
     network_mode: "host"

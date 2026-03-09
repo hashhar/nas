@@ -12,6 +12,7 @@
             },
             "api": "rest",
             "include": [
+                "avatar",
                 "reels",
                 "tagged"
             ],
