@@ -533,9 +533,20 @@ Make sure to enable authentication on the web UI.
 
 ### qBittorrent
 
-You can generate the password hash for a given password using
-`qbittorrent/gen_password.py` script. Update the value for
-`WebUI\Password_PBKDF2` in `qBittorrent.conf` with the output of the script.
+Create `qbittorrent/secrets.env` with WebUI credentials:
+
+```env
+QBITTORRENT_WEBUI_USERNAME=<your-username>
+QBITTORRENT_WEBUI_PASSWORD=<PBKDF2-hashed-password>
+```
+
+Generate the password hash using the included script:
+
+```sh
+python qbittorrent/gen_password.py
+```
+
+Copy the `@ByteArray(...)` value from the output into `QBITTORRENT_WEBUI_PASSWORD`.
 
 ### Restic Rest Server
 

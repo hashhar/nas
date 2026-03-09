@@ -1,11 +1,81 @@
 #!/usr/bin/with-contenv bash
 
-# DEFAULT_CONFIG is set in container's env
-DEFAULT_CONFIG="${DEFAULT_CONFIG:?Expected DEFAULT_CONFIG env var to be set and not empty}"
-CONFIG=/config/qBittorrent
-
 set -e
 
-# Copy over the new config while backing up any overwrites
-backup_dir="/config/backup-$(date +%FT%T)"
-rsync -vv --checksum -a --backup --backup-dir="${backup_dir}/" "${DEFAULT_CONFIG}/" "${CONFIG}/"
+TEMPLATES=/default-config-templates
+CONFIG=/config/qBittorrent
+
+# Install envsubst (gettext package) if not already present
+if ! command -v envsubst &>/dev/null; then
+    apk add --no-cache gettext
+fi
+
+mkdir -p "${CONFIG}"
+
+# Fetch tracker lists from public sources
+# Sources: newtrackon.com (stable trackers) and ngosang/trackerslist (best trackers)
+NEWTRACKON_URL="https://newtrackon.com/api/stable?include_ipv4_only_trackers=1&include_ipv6_only_trackers=1&min_age_days=0"
+NGOSANG_URL="https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_best.txt"
+
+trackers_raw=""
+for url in "${NEWTRACKON_URL}" "${NGOSANG_URL}"; do
+    result=$(wget -qO- --timeout=10 "${url}" 2>/dev/null) || true
+    if [ -n "${result}" ]; then
+        trackers_raw="${trackers_raw}
+${result}"
+        echo "[99-overwrite-config] fetched trackers from ${url}"
+    else
+        echo "[99-overwrite-config] WARNING: failed to fetch trackers from ${url}"
+    fi
+done
+
+# Merge, deduplicate, filter empty lines, convert to \n\n-delimited single-line format
+export ADDITIONAL_TRACKERS
+if [ -n "${trackers_raw}" ]; then
+    ADDITIONAL_TRACKERS=$(printf '%s\n' "${trackers_raw}" | sed '/^[[:space:]]*$/d' | sort -u | paste -sd'|' | sed 's/|/\\n\\n/g')
+    ADDITIONAL_TRACKERS="\\n\\n${ADDITIONAL_TRACKERS}"
+    echo "[99-overwrite-config] loaded $(printf '%s\n' "${trackers_raw}" | sed '/^[[:space:]]*$/d' | sort -u | wc -l) unique trackers"
+else
+    ADDITIONAL_TRACKERS=""
+    echo "[99-overwrite-config] WARNING: no trackers fetched from any source, AdditionalTrackers will be empty"
+fi
+
+# Process qBittorrent.conf.tpl
+envsubst '${QBITTORRENT_LISTENING_PORT},${TORRENT_ROOT},${QBITTORRENT_WEBUI_USERNAME},${QBITTORRENT_WEBUI_PASSWORD},${ADDITIONAL_TRACKERS}' \
+    < "${TEMPLATES}/qBittorrent.conf.tpl" \
+    > /tmp/qBittorrent.conf
+
+# Process watched_folders.json.tpl
+envsubst '${TORRENT_ROOT}' \
+    < "${TEMPLATES}/watched_folders.json.tpl" \
+    > /tmp/watched_folders.json
+
+# Copy each generated/static config, backing up only if different
+for file in qBittorrent.conf watched_folders.json; do
+    if [ -f "${CONFIG}/${file}" ] && cmp -s "/tmp/${file}" "${CONFIG}/${file}"; then
+        echo "[99-overwrite-config] ${file} unchanged, skipping"
+    else
+        if [ -f "${CONFIG}/${file}" ]; then
+            backup="${CONFIG}/${file}.bak.$(date +%FT%T)"
+            cp "${CONFIG}/${file}" "${backup}"
+            echo "[99-overwrite-config] backed up ${file} to ${backup}"
+        fi
+        cp "/tmp/${file}" "${CONFIG}/${file}"
+        echo "[99-overwrite-config] deployed ${file}"
+    fi
+done
+
+# categories.json has no variables, just copy directly
+if [ -f "${CONFIG}/categories.json" ] && cmp -s "${TEMPLATES}/categories.json" "${CONFIG}/categories.json"; then
+    echo "[99-overwrite-config] categories.json unchanged, skipping"
+else
+    if [ -f "${CONFIG}/categories.json" ]; then
+        backup="${CONFIG}/categories.json.bak.$(date +%FT%T)"
+        cp "${CONFIG}/categories.json" "${backup}"
+        echo "[99-overwrite-config] backed up categories.json to ${backup}"
+    fi
+    cp "${TEMPLATES}/categories.json" "${CONFIG}/categories.json"
+    echo "[99-overwrite-config] deployed categories.json"
+fi
+
+rm -f /tmp/qBittorrent.conf /tmp/watched_folders.json

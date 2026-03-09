@@ -6,7 +6,6 @@ updates:
       - "/caddy"
       - "/gallery-dl"
       - "/prometheus"
-      - "/qbittorrent"
     schedule:
       interval: "weekly"
 
