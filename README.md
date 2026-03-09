@@ -470,6 +470,12 @@ To start a stopped service without using any changes:
 docker-compose up --detach --no-recreate
 ```
 
+To run gallery-dl (profile-gated, exits when done):
+
+```sh
+docker-compose --profile gallery-dl up --build --detach gallery-dl
+```
+
 ## Environment Files
 
 We have multiple environment files.
