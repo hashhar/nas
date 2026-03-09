@@ -487,6 +487,8 @@ We have multiple environment files.
   into containers using `env_file` in `docker-compose.yml`. Useful for secrets.
   ***Define non-secret environment variables applicable to a single container
   using `environment` in `docker-compose.yml`.***
+- `<service>/secrets.env.example`: Tracked template with placeholder values.
+  Copy to `secrets.env` and fill in real values to get started.
 
 ## Special Instructions
 
@@ -494,10 +496,7 @@ Some containers need a bit of manual setup which is described below.
 
 ### Caddy
 
-Caddy requires some secrets to work. Make sure the following variables have values defined in `caddy/secrets.env`:
-
-- `CF_API_TOKEN`: Cloudflare API token with read permissions for `Zone.Zone`
-  and edit permissions for `Zone.DNS`.
+Caddy requires some secrets to work. See `caddy/secrets.env.example` for required variables and instructions.
 
 ### Plex
 
@@ -539,12 +538,7 @@ Make sure to enable authentication on the web UI.
 
 ### qBittorrent
 
-Create `qbittorrent/secrets.env` with WebUI credentials:
-
-```env
-QBITTORRENT_WEBUI_USERNAME=<your-username>
-QBITTORRENT_WEBUI_PASSWORD=<PBKDF2-hashed-password>
-```
+See `qbittorrent/secrets.env.example` for required variables and instructions.
 
 Generate the password hash using the included script:
 
@@ -562,11 +556,7 @@ which you can then keep reusing.
 
 ### Grafana
 
-Create `grafana/secrets.env` with an admin password:
-
-```env
-GF_SECURITY_ADMIN_PASSWORD=<your-chosen-password>
-```
+See `grafana/secrets.env.example` for required variables and instructions.
 
 ### Alertmanager
 
@@ -575,22 +565,11 @@ Alertmanager sends alerts via Gmail SMTP using an App Password (not your regular
 1. Go to [myaccount.google.com](https://myaccount.google.com) → Security → 2-Step Verification → App passwords
 2. Create a new app password named `Alertmanager` and copy the 16-character code
 
-Create `alertmanager/secrets.env`:
-
-```env
-SMTP_FROM=your-gmail@gmail.com
-SMTP_PASSWORD=abcd-efgh-ijkl-mnop
-ALERT_EMAIL_TO=your-email@example.com
-```
+See `alertmanager/secrets.env.example` for required variables and instructions.
 
 ### Immich
 
-Create `immich/secrets.env` with a shared database password:
-
-```env
-DB_PASSWORD=<random alphanumeric>
-POSTGRES_PASSWORD=<same value as DB_PASSWORD>
-```
+See `immich/secrets.env.example` for required variables and instructions.
 
 **Remote ML workers:**
 

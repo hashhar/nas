@@ -30,6 +30,7 @@ See the [Docker macvlan Networking appendix](README.md#docker-macvlan-networking
 
 - **`.env`**: Shared variables for docker-compose interpolation (paths, UIDs/GIDs, ports). Not injected into containers.
 - **`<service>/secrets.env`**: Per-service secrets injected via `env_file:`. Git-ignored. Any service that requires secrets needs one of these. When adding one, document the required variables and their purpose in `README.md` under a `### <ServiceName>` entry in the Special Instructions section. See [Environment Files in README](README.md#environment-files) for full operational guidance.
+- **`<service>/secrets.env.example`**: Tracked template showing required variable names and how to obtain values. Copy to `secrets.env` and fill in real values.
 - **Build-time templating** (being phased out): Dockerfiles use multi-stage builds — Alpine+gettext `envsubst` or `sed` to bake config templates with build args, then copy into final image.
 - **Runtime templating** (preferred): Config templates (`.tpl` files) are mounted into containers and rendered at startup via `envsubst`. See "Configuration refactoring" below.
 
@@ -120,7 +121,7 @@ See [User & Group in README](README.md#user--group) for the full permission tabl
 
 | Change | What to update |
 |--------|---------------|
-| Add a service with a `secrets.env` | Add a `### <ServiceName>` entry under "Special Instructions" in README documenting each required variable, its purpose, and how to generate/obtain it |
+| Add a service with a `secrets.env` | Add a `### <ServiceName>` entry under "Special Instructions" in README documenting each required variable, its purpose, and how to generate/obtain it; and add a `secrets.env.example` with all required variables |
 | Remove a service with a `secrets.env` | Remove its Special Instructions entry from README |
 | Add a new Synology user for a service | Add the user to the Users table in README |
 | Add a custom Dockerfile | Add the service directory to the `docker` ecosystem in `dependabot.yml` |
