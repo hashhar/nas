@@ -153,7 +153,7 @@ services:
     depends_on:
       - caddy
       - prometheus
-    image: grafana/grafana:12.4.0
+    image: grafana/grafana:12.4.1
     container_name: grafana
     volumes:
       - grafana_data:/var/lib/grafana
