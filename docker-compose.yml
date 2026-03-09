@@ -133,13 +133,16 @@ services:
   prometheus:
     depends_on:
       - caddy
-    build:
-      context: prometheus
-      args:
-        - RESTIC_REST_SERVER_PORT=$RESTIC_REST_SERVER_PORT
-    image: hashhar/prometheus:local
+    image: prom/prometheus:v3.10.0
     container_name: prometheus
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/prometheus"]
+    environment:
+      - RESTIC_REST_SERVER_PORT=$RESTIC_REST_SERVER_PORT
     volumes:
+      - ./prometheus/entrypoint.sh:/entrypoint.sh:ro
+      - ./prometheus/prometheus.yml.tpl:/etc/prometheus/prometheus.yml.tpl:ro
+      - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
       - prometheus_data:/prometheus
     networks:
       bridge:

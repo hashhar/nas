@@ -5,7 +5,6 @@ updates:
       - "/alertmanager"
       - "/caddy"
       - "/gallery-dl"
-      - "/prometheus"
     schedule:
       interval: "weekly"
 
