@@ -240,7 +240,7 @@ services:
         condition: service_healthy
       immich-database:
         condition: service_healthy
-    image: ghcr.io/immich-app/immich-server:v2.5.6
+    image: ghcr.io/immich-app/immich-server:v2.6.1
     container_name: immich-server
     user: "$IMMICH_UID:$IMMICH_GID"
     environment:
