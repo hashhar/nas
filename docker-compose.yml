@@ -265,7 +265,7 @@ services:
     restart: unless-stopped
 
   immich-machine-learning:
-    image: ghcr.io/immich-app/immich-machine-learning:v2.5.6
+    image: ghcr.io/immich-app/immich-machine-learning:v2.6.1
     container_name: immich-machine-learning
     volumes:
       - immich_model_cache:/cache
