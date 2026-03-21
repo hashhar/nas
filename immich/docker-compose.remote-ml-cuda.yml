@@ -2,7 +2,7 @@ name: immich_remote_ml
 services:
   immich-machine-learning:
     container_name: immich_machine_learning
-    image: ghcr.io/immich-app/immich-machine-learning:v2.5.6-cuda
+    image: ghcr.io/immich-app/immich-machine-learning:v2.6.1-cuda
     environment:
       - MACHINE_LEARNING_WORKERS=${MACHINE_LEARNING_WORKERS:-1}
     volumes:
