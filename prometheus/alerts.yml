@@ -10,8 +10,8 @@ groups:
           summary: "Disk {{ $labels.device }} SMART status unhealthy"
 
       - alert: SmartTemperatureHigh
-        expr: smartctl_device_temperature > 45
-        for: 10m
+        expr: smartctl_device_temperature > 50
+        for: 5m
         labels:
           severity: warning
         annotations:
