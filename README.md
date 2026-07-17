@@ -571,6 +571,30 @@ See `alertmanager/secrets.env.example` for required variables and instructions.
 
 See `immich/secrets.env.example` for required variables and instructions.
 
+#### Version-controlled configuration (`immich/immich.json`)
+
+System settings are managed declaratively via a config file mounted into
+`immich-server` (`IMMICH_CONFIG_FILE`, set in `.env`). This automates what would
+otherwise be manual admin-UI steps: the **storage template** and the **ML worker
+URLs** are both baked into `immich/immich.json`. The file is intentionally
+minimal — Immich deep-merges it over the defaults of the running image, so any
+key we omit keeps tracking upstream. Only override a key when you actually mean
+to. While `IMMICH_CONFIG_FILE` is set the admin-UI settings pages are read-only;
+edit `immich/immich.json` and restart `immich-server` to change them.
+
+**Storage template.**:
+
+```
+{{y}}/{{#if album}}{{{album}}}{{else}}{{y}} - {{MM}}{{/if}}/{{{filename}}}
+```
+
+(organises by year, then album name if set, otherwise by year-month)
+
+**Before first deploy:** set your desktop worker's LAN IP in
+`immich/immich.json` → `machineLearning.urls[0]` (a private LAN IP is fine to
+commit — the repo already hardcodes several). If the desktop is offline, Immich
+falls back to the NAS-local worker automatically.
+
 **Remote ML workers:**
 
 The NAS (DS1821+) is underpowered for ML. Instead, run ML workers on more capable machines using the compose files in `immich/`:
@@ -592,10 +616,12 @@ MACHINE_LEARNING_WORKERS=3 docker compose -f immich/docker-compose.remote-ml-cud
 Default is 1 worker. This is not stored in `.env` since it varies per machine.
 Verify CUDA is active by checking container logs for `CUDAExecutionProvider`.
 
-In Immich admin UI (Administration → Machine Learning Settings), add ML worker URLs with fallback order:
+The fallback order lives in `immich/immich.json` > `machineLearning.urls`:
 1. `http://<desktop-ip>:3003` (primary — CUDA-accelerated)
-2. `http://<macbook-ip>:3003` (fallback — CPU-only)
-3. `http://immich-machine-learning:3003` (last resort — NAS-local, slow)
+2. `http://immich-machine-learning:3003` (fallback — NAS-local, slow)
+
+Add a `http://<macbook-ip>:3003` entry between the two if you also run the
+CPU-only worker on the MacBook.
 
 `immich-machine-learning` resolves via Docker's internal DNS from `immich-server` (same bridge network) — no IP needed.
 
@@ -604,13 +630,12 @@ If the primary is offline, Immich falls back to the next URL. The NAS-local work
 **Post-deployment configuration:**
 
 1. Access `immich.nas.hashhar.com` and create an admin account
-2. In Administration → Storage Template, enable and set template to:
-   `{{y}}/{{#if album}}{{{album}}}{{else}}{{y}} - {{MM}}{{/if}}/{{{filename}}}`
-   (organises by year, then album name if set, otherwise by year-month)
-3. Configure ML worker URLs as described above
-4. Create a dedicated user for each user, do not use admin user
-5. Install the Immich mobile app and connect to `https://immich.nas.hashhar.com`
-6. Photos are synced to the NAS via Syncthing — do **not** enable in-app backup
+2. Create a dedicated user for each user, do not use admin user
+3. Install the Immich mobile app and connect to `https://immich.nas.hashhar.com`
+4. Photos are synced to the NAS via Syncthing — do **not** enable in-app backup
+
+(Storage template and ML worker URLs are applied automatically from
+`immich/immich.json` - no manual admin-UI steps needed.)
 
 To add an external library: Administration → External Libraries → Create, then set the import path (e.g. `/volume1/data/Personal/Pictures/Synced/Wallpapers`).
 

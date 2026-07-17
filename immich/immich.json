@@ -1,0 +1,29 @@
+{
+  "ffmpeg": {
+    "acceptedAudioCodecs": [
+      "aac",
+      "mp3",
+      "opus",
+      "pcm_s16le"
+    ],
+    "acceptedVideoCodecs": [
+      "h264",
+      "hevc",
+      "vp9",
+      "av1"
+    ]
+  },
+  "machineLearning": {
+    "urls": [
+      "http://192.168.1.40:3003",
+      "http://immich-machine-learning:3003"
+    ]
+  },
+  "server": {
+    "externalDomain": "https://immich.nas.ts.hashhar.com"
+  },
+  "storageTemplate": {
+    "enabled": true,
+    "template": "{{y}}/{{#if album}}{{{album}}}{{else}}{{y}} - {{MM}}{{/if}}/{{{filename}}}"
+  }
+}

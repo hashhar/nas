@@ -250,12 +250,14 @@ services:
       - REDIS_HOSTNAME=immich-redis
       - IMMICH_TRUSTED_PROXIES=172.18.0.3
       - IMMICH_TELEMETRY_INCLUDE=all
+      - IMMICH_CONFIG_FILE=$IMMICH_CONFIG_FILE
       - TZ=$TZ
     env_file:
       - immich/secrets.env
     volumes:
       - $DOCKER_DATA/immich/upload:/data
       - /etc/localtime:/etc/localtime:ro
+      - ./immich/immich.json:$IMMICH_CONFIG_FILE:ro
       - $DATA_ROOT/Personal/Pictures/Synced:$DATA_ROOT/Personal/Pictures/Synced
     healthcheck:
       disable: false

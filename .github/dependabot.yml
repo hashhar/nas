@@ -16,4 +16,8 @@ updates:
       interval: "weekly"
     ignore:
       - dependency-name: "hashhar/*"
+      # Postgres major version is pinned to Immich's supported
+      # major and cannot be bumped without a manual DB migration. The
+      # vectorchord/pgvectors portions of the tag are still tracked.
       - dependency-name: "ghcr.io/immich-app/postgres"
+        update-types: ["version-update:semver-major"]
