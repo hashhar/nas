@@ -3,20 +3,34 @@
 set -euo pipefail
 
 usage() {
-    echo "Usage: $0 [arg1 arg2 ...] <URL>" 1>&2
+    echo "Usage: $0 -s <site> [gallery-dl args ...] <URL>" 1>&2
     exit 1
 }
 
-if [[ $# -lt 1 ]]; then
-    usage
-else
-    length=$(( $# - 1 ))
-    args=( "${@:1:$length}" )
-    url="${@: -1}"
-    profile="$(basename "$url")"
-    destination="/download/instagram/$profile"
-    archive="/download/archive/instagram/$profile.sqlite3"
-fi
+site=""
+args=()
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -s|--site)
+            [[ $# -ge 2 ]] || usage
+            site="$2"
+            shift 2
+            ;;
+        *)
+            args+=( "$1" )
+            shift
+            ;;
+    esac
+done
+
+[[ -n "$site" ]] || usage
+[[ ${#args[@]} -ge 1 ]] || usage
+
+url="${args[-1]}"
+unset 'args[-1]'
+profile="$(basename "$url")"
+destination="/download/$site/$profile"
+archive="/download/archive/$site/$profile.sqlite3"
 
 set -x
 sudo docker-compose run \

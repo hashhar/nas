@@ -2,16 +2,16 @@
 {
     "extractor": {
         "reddit": {
+            "#directory": "single per-site archive; files go to {subreddit}",
             "directory": [
                 "{category}",
-                "{subreddit}",
-                "{subcategory}"
+                "{subreddit}"
             ],
-            "#": "only spawn child extractors for links to specific sites",
+            "#whitelist": "only spawn child extractors for links to these sites",
             "whitelist": ["imgur", "redgifs"],
-            "#": "put files from child extractors into the reddit directory",
+            "#parent-directory": "put files from child extractors into the reddit directory",
             "parent-directory": true,
-            "#": "transfer metadata to any child extractor as '_reddit'",
+            "#parent-metadata": "transfer metadata to any child extractor as '_reddit'",
             "parent-metadata": "_reddit",
 
             "client-id": null,

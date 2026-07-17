@@ -1,6 +1,7 @@
 {
     "extractor": {
         "instagram": {
+            "#directory": "per profile folder (single-profile.sh); split by subcategory (posts/reels/...), and sub-group tagged posts by their author",
             "directory": {
                 "subcategory == 'tagged'": [
                     "{subcategory}",

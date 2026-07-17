@@ -1,0 +1,15 @@
+{
+    "extractor": {
+        "erome": {
+            "#directory": "single per-site archive; files go to {category}/{user}/{album}",
+            "directory": [
+                "{category}",
+                "{user}",
+                "{album_id} {title}"
+            ],
+            "user": {
+                "reposts": true
+            }
+        }
+    }
+}
