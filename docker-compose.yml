@@ -51,7 +51,7 @@ services:
   qbittorrent:
     depends_on:
       - caddy
-    image: lscr.io/linuxserver/qbittorrent:5.1.4
+    image: lscr.io/linuxserver/qbittorrent:5.2.3
     container_name: qbittorrent
     env_file:
       - qbittorrent/secrets.env
@@ -80,7 +80,7 @@ services:
   syncthing:
     depends_on:
       - caddy
-    image: syncthing/syncthing:2.0.15
+    image: syncthing/syncthing:2.1.2
     container_name: syncthing
     hostname: Radon # name of syncthing instance
     environment:
@@ -133,7 +133,7 @@ services:
   prometheus:
     depends_on:
       - caddy
-    image: prom/prometheus:v3.10.0
+    image: prom/prometheus:v3.13.1
     container_name: prometheus
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/prometheus"]
@@ -153,7 +153,7 @@ services:
     depends_on:
       - caddy
       - prometheus
-    image: grafana/grafana:12.4.0
+    image: grafana/grafana:13.1.0
     container_name: grafana
     volumes:
       - grafana_data:/var/lib/grafana
@@ -215,7 +215,7 @@ services:
     restart: unless-stopped
 
   node-exporter:
-    image: prom/node-exporter:v1.10.2
+    image: prom/node-exporter:v1.12.1
     container_name: node-exporter
     pid: "host"
     volumes:
