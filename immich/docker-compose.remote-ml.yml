@@ -12,3 +12,10 @@ services:
       - 3003:3003
 volumes:
   model-cache:
+# Pinned outside 172.16.0.0/12: Docker's default address pool can collide with
+# the NAS's bridge network (172.18.0.0/16), which this host routes over Tailscale.
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 10.100.0.0/24

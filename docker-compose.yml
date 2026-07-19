@@ -255,7 +255,7 @@ services:
     env_file:
       - immich/secrets.env
     volumes:
-      - $DOCKER_DATA/immich/upload:/data
+      - $DATA_ROOT/Personal/Pictures/immich/upload:/data
       - /etc/localtime:/etc/localtime:ro
       - ./immich/immich.json:$IMMICH_CONFIG_FILE:ro
       - $DATA_ROOT/Personal/Pictures/Synced:$DATA_ROOT/Personal/Pictures/Synced

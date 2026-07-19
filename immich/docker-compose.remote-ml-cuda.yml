@@ -4,7 +4,10 @@ services:
     container_name: immich_machine_learning
     image: ghcr.io/immich-app/immich-machine-learning:v3.0.3-cuda
     environment:
-      - MACHINE_LEARNING_WORKERS=${MACHINE_LEARNING_WORKERS:-1}
+      # Default 2: this RTX worker serves two microservices consumers (NAS +
+      # remote-transcode). A single worker can't answer /ping while mid-inference,
+      # so it flaps healthy/unhealthy under backlog; 2 keeps one free to respond.
+      - MACHINE_LEARNING_WORKERS=${MACHINE_LEARNING_WORKERS:-2}
     volumes:
       - model-cache:/cache
     restart: unless-stopped
@@ -16,7 +19,17 @@ services:
           devices:
             - driver: nvidia
               count: 1
+              # compute and utility needed for CUDA
               capabilities:
                 - gpu
+                - compute
+                - utility
 volumes:
   model-cache:
+# Pinned outside 172.16.0.0/12: Docker's default address pool can collide with
+# the NAS's bridge network (172.18.0.0/16), which this host routes over Tailscale.
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 10.100.0.0/24

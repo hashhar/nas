@@ -1,5 +1,7 @@
 {
   "ffmpeg": {
+    "accel": "nvenc",
+    "accelDecode": true,
     "acceptedAudioCodecs": [
       "aac",
       "mp3",
@@ -8,10 +10,19 @@
     ],
     "acceptedVideoCodecs": [
       "h264",
-      "hevc",
       "vp9",
       "av1"
     ]
+  },
+  "image": {
+    "preview": {
+      "format": "webp"
+    }
+  },
+  "library": {
+    "watch": {
+      "enabled": true
+    }
   },
   "machineLearning": {
     "urls": [

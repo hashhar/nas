@@ -1,0 +1,43 @@
+name: immich_remote_transcode
+services:
+  immich-server:
+    container_name: immich_remote_transcode
+    image: ghcr.io/immich-app/immich-server:v3.0.3
+    environment:
+      - IMMICH_WORKERS_INCLUDE=microservices
+      - DB_HOSTNAME=172.18.0.11
+      - DB_USERNAME=postgres
+      - DB_DATABASE_NAME=immich
+      - REDIS_HOSTNAME=172.18.0.10
+    env_file:
+      - secrets.env
+    # ML worker URLs come from the shared DB config (immich/immich.json):
+    #   1. http://<desktop-ip>:3003         (this desktop's CUDA worker, ${DESKTOP_IP})
+    #   2. http://immich-machine-learning   (NAS docker DNS — unresolvable from here)
+    # Point the fallback name at the local CUDA worker too, so a momentary miss
+    # on url[0] retries locally instead of timing out with "failed for all URLs".
+    extra_hosts:
+      - "immich-machine-learning:${DESKTOP_IP}"
+    volumes:
+      - ${IMMICH_UPLOAD_LOCATION}:/data
+      # container path must match the NAS's absolute path — Immich stores it in the DB
+      - ${IMMICH_SYNCED_LIBRARY_LOCATION}:/volume1/data/Personal/Pictures/Synced
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              # video capability needed for NVENC/NVDEC
+              capabilities:
+                - gpu
+                - compute
+                - video
+# Pinned outside 172.16.0.0/12: Docker's default address pool can collide with
+# the NAS's bridge network (172.18.0.0/16), which this host routes over Tailscale.
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 10.101.0.0/24

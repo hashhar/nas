@@ -574,25 +574,16 @@ See `immich/secrets.env.example` for required variables and instructions.
 #### Version-controlled configuration (`immich/immich.json`)
 
 System settings are managed declaratively via a config file mounted into
-`immich-server` (`IMMICH_CONFIG_FILE`, set in `.env`). This automates what would
-otherwise be manual admin-UI steps: the **storage template** and the **ML worker
-URLs** are both baked into `immich/immich.json`. The file is intentionally
-minimal — Immich deep-merges it over the defaults of the running image, so any
-key we omit keeps tracking upstream. Only override a key when you actually mean
-to. While `IMMICH_CONFIG_FILE` is set the admin-UI settings pages are read-only;
-edit `immich/immich.json` and restart `immich-server` to change them.
+`immich-server` (`IMMICH_CONFIG_FILE`, set in `.env`) — the **storage
+template**, **ML worker URLs**, and **ffmpeg transcoding** settings live in
+`immich/immich.json`. Edit the file and restart `immich-server` to change
+them.
 
-**Storage template.**:
-
-```
-{{y}}/{{#if album}}{{{album}}}{{else}}{{y}} - {{MM}}{{/if}}/{{{filename}}}
-```
-
-(organises by year, then album name if set, otherwise by year-month)
+The storage template organises files by year, then album name if set,
+otherwise by year-month.
 
 **Before first deploy:** set your desktop worker's LAN IP in
-`immich/immich.json` → `machineLearning.urls[0]` (a private LAN IP is fine to
-commit — the repo already hardcodes several). If the desktop is offline, Immich
+`immich/immich.json` → `machineLearning.urls[0]`. If the desktop is offline, Immich
 falls back to the NAS-local worker automatically.
 
 **Remote ML workers:**
@@ -613,19 +604,85 @@ MACHINE_LEARNING_WORKERS=2 docker compose -f immich/docker-compose.remote-ml.yml
 MACHINE_LEARNING_WORKERS=3 docker compose -f immich/docker-compose.remote-ml-cuda.yml up -d
 ```
 
-Default is 1 worker. This is not stored in `.env` since it varies per machine.
-Verify CUDA is active by checking container logs for `CUDAExecutionProvider`.
+The CUDA compose file defaults to 2 workers (the CPU file to 1); the env var
+overrides it since the right count varies per machine — see the comment in
+`docker-compose.remote-ml-cuda.yml` for why 2. Verify CUDA is active by
+checking container logs for `CUDAExecutionProvider` with no fallback to
+`CPUExecutionProvider` after it.
 
-The fallback order lives in `immich/immich.json` > `machineLearning.urls`:
-1. `http://<desktop-ip>:3003` (primary — CUDA-accelerated)
-2. `http://immich-machine-learning:3003` (fallback — NAS-local, slow)
+Worker URLs and their fallback order live in `immich/immich.json` >
+`machineLearning.urls`: the desktop's CUDA worker first, the NAS-local worker
+last so ML stays available even when all remote machines are offline. Add a
+`http://<macbook-ip>:3003` entry between the two if you also run the CPU-only
+worker on the MacBook.
 
-Add a `http://<macbook-ip>:3003` entry between the two if you also run the
-CPU-only worker on the MacBook.
+**Remote video transcoding worker:**
 
-`immich-machine-learning` resolves via Docker's internal DNS from `immich-server` (same bridge network) — no IP needed.
+Offload video transcoding and other background jobs to a desktop with an
+NVIDIA GPU using `immich/docker-compose.remote-transcode.yml`
+([approach](https://github.com/immich-app/immich/discussions/14142)). Runs a
+second `immich-server` with `IMMICH_WORKERS_INCLUDE=microservices` against
+the NAS's Postgres/Redis. The NAS's own `immich-server` keeps running `microservices` too
+(no override), so both pull from the same queue: if the desktop is offline
+the NAS still processes jobs, just without hardware accel. `ffmpeg.accel:
+nvenc` is safe to leave global — Immich retries a failed hardware-accelerated
+transcode with software decoding, then fully disabled, before failing.
 
-If the primary is offline, Immich falls back to the next URL. The NAS-local worker ensures ML is always available even when all remote machines are offline.
+Prerequisites:
+
+1. **Reach the NAS's bridge network** (Postgres/Redis IPs are in the compose
+   file) — see [Tailscale Routing](#tailscale-routing). No new ports exposed
+   on the NAS. On WSL2 specifically: the Windows Tailscale client's
+   connection isn't visible inside WSL2 even with `networkingMode=mirrored`
+   (the WinTun adapter doesn't mirror) — install and run Tailscale inside the
+   WSL2 distro itself (`tailscale up --accept-routes`), it registers as its
+   own device. If Tailscale drops in WSL2, jobs here fail with `ETIMEDOUT`
+   (container stays `healthy` regardless — the healthcheck doesn't test DB
+   connectivity); it self-recovers within seconds of reconnecting, and the
+   NAS covers the queue meanwhile.
+2. **Shared storage**, matching `$DATA_ROOT`'s layout — mount the NAS's
+   `data` share on the worker host (e.g. a drvfs-mapped drive at `/mnt/data`
+   on Windows/WSL2).
+3. **Shared secret.** Copy the NAS's `immich/secrets.env` to the worker
+   (git-ignored, must contain the same `DB_PASSWORD`).
+4. **First deploy against a brand-new `UPLOAD_LOCATION`.** Immich's
+   folder-check markers must already exist or `immich-server` refuses to
+   start — create `thumbs/ upload/ library/ profile/ backups/ encoded-video/`
+   under it, `touch .immich` inside each, owned by `$IMMICH_UID:$IMMICH_GID`.
+
+Run at boot via systemd (e.g. WSL2 with `systemd=true` in `/etc/wsl.conf`):
+
+```sh
+export DESKTOP_USER=<your-user> NAS_REPO_DIR=<path-to-this-repo-checkout> DATA_MOUNT=/mnt/data DESKTOP_IP=192.168.1.40
+for svc in immich-remote-ml immich-remote-transcode; do
+  envsubst '$DESKTOP_USER,$NAS_REPO_DIR,$DATA_MOUNT,$DESKTOP_IP' \
+    < immich/systemd/$svc.service.tpl | sudo tee /etc/systemd/system/$svc.service
+done
+sudo systemctl daemon-reload
+sudo systemctl enable --now immich-remote-ml.service immich-remote-transcode.service
+```
+
+`DESKTOP_IP` is this worker's own LAN IP, used by the transcode unit's
+`extra_hosts` entry — see the comment in `docker-compose.remote-transcode.yml`.
+
+Add the storage mount to `/etc/fstab` too, so it survives WSL2 restarts, e.g.
+for a drvfs-mapped Windows drive: `Z: /mnt/data drvfs rw,relatime,nofail 0 0`.
+
+Verify NVENC is actually used: container logs should show
+`Transcoding video ... with NVENC-accelerated encoding` followed by
+`Successfully encoded ...` with no error/retry in between.
+
+**Inotify limits for library watching:**
+
+`library.watch.enabled` (`immich/immich.json`) needs one inotify watch per
+file. The Linux default (`fs.inotify.max_user_watches=8192`) isn't enough for
+a library of any real size — watchers fail with `ENOSPC` and spam retries.
+Raise it on the NAS, in `/etc/sysctl.conf`, then `sudo sysctl -p`:
+
+```
+fs.inotify.max_user_watches = 1048576
+fs.inotify.max_user_instances = 1024
+```
 
 **Post-deployment configuration:**
 
