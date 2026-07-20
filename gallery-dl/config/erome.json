@@ -5,7 +5,7 @@
             "directory": [
                 "{category}",
                 "{user}",
-                "{album_id} {title}"
+                "{title}"
             ],
             "user": {
                 "reposts": true

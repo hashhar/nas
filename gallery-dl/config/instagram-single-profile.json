@@ -12,13 +12,9 @@
                 ]
             },
             "api": "rest",
+            "#include": "See https://gdl-org.github.io/docs/configuration.html#extractor-instagram-include for full list",
             "include": [
-                "posts",
-                "reels",
-                "tagged",
-                "stories",
-                "highlights",
-                "avatar"
+                "all"
             ],
             "previews": true,
             "videos": true

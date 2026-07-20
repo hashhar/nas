@@ -1,7 +1,8 @@
 {
     "extractor": {
         "base-directory": "./",
-        "archive": "./archive/{category}.sqlite3",
+        "archive": ["archive", "{category}.sqlite3"],
+        "archive-mode": "memory",
 
         "#": "skip already downloaded files",
         "skip": true,

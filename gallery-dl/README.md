@@ -23,28 +23,28 @@ profile writes to a separate SQLite file, the runs parallelize safely with
 xargs -n 1 -P 8 gallery-dl/scripts/single-profile.sh \
     -s instagram \
     -c /var/gallery-dl/.config/gallery-dl/instagram-single-profile.json \
-    < $DOCKER_DATA/gallery-dl/data/instagram-public.txt
+    < $DATA_ROOT/Personal/Pictures/Synced/Wallpapers/Fun/instagram/instagram-public.txt
 
 # Full sync (stories/highlights, requires cookies)
 xargs -n 1 -P 2 gallery-dl/scripts/single-profile.sh \
     -s instagram \
     -c /var/gallery-dl/.config/gallery-dl/instagram-single-profile-stories-highlights.json \
-    --cookies /data/cookies.txt \
-    < $DOCKER_DATA/gallery-dl/data/instagram-public.txt
+    --cookies /download/cookies.txt \
+    < $DATA_ROOT/Personal/Pictures/Synced/Wallpapers/Fun/instagram/instagram-public.txt
 
 # Full sync (reels/tagged, requires cookies)
 xargs -n 1 -P 2 gallery-dl/scripts/single-profile.sh \
     -s instagram \
     -c /var/gallery-dl/.config/gallery-dl/instagram-single-profile-reels-tagged.json \
-    --cookies /data/cookies.txt \
-    < $DOCKER_DATA/gallery-dl/data/instagram-public.txt
+    --cookies /download/cookies.txt \
+    < $DATA_ROOT/Personal/Pictures/Synced/Wallpapers/Fun/instagram/instagram-public.txt
 
 # Full sync (private profiles, requires cookies)
 xargs -n 1 -P 2 gallery-dl/scripts/single-profile.sh \
     -s instagram \
     -c /var/gallery-dl/.config/gallery-dl/instagram-single-profile.json \
-    --cookies /data/cookies.txt \
-    < $DOCKER_DATA/gallery-dl/data/instagram-private.txt
+    --cookies /download/cookies.txt \
+    < $DATA_ROOT/Personal/Pictures/Synced/Wallpapers/Fun/instagram/instagram-private.txt
 ```
 
 Add `-A 10` before the URL for incremental sync (abort after 10 already-seen files instead of scanning the full archive).
@@ -64,20 +64,20 @@ writers would contend on the one SQLite file.
 # Erome — one process, one archive, dedupes reposts across users
 sudo docker-compose run -T --rm gallery-dl \
     -c /var/gallery-dl/.config/gallery-dl/erome.json \
-    -i /data/erome.txt
+    -i /download/erome/erome.txt
 
-# Reddit — same pattern (the input file lives at $DOCKER_DATA/gallery-dl/data/reddit.txt)
+# Reddit — same pattern (the input file lives at $DATA_ROOT/Personal/Pictures/Synced/Wallpapers/Fun/reddit/reddit.txt)
 sudo docker-compose run -T --rm gallery-dl \
     -c /var/gallery-dl/.config/gallery-dl/reddit.json \
-    -i /data/reddit.txt
+    -i /download/reddit/reddit.txt
 ```
 
 The input file (`-i`) is read *inside* the container, so use container paths:
-`/data/...` maps to `$DOCKER_DATA/gallery-dl/data/`. Add `-A 10` for incremental sync.
+`/download/...` maps to `$DATA_ROOT/Personal/Pictures/Synced/Wallpapers/Fun/`. Add `-A 10` for incremental sync.
 
 ## Cookie handling
 
 ```bash
-mv ~/cookies.txt $DOCKER_DATA/gallery-dl/data/cookies.txt
-sudo chown syncthing:service_rw $DOCKER_DATA/gallery-dl/data/cookies.txt
+mv ~/cookies.txt $DATA_ROOT/Personal/Pictures/Synced/Wallpapers/Fun/cookies.txt
+sudo chown syncthing:service_rw $DATA_ROOT/Personal/Pictures/Synced/Wallpapers/Fun/cookies.txt
 ```

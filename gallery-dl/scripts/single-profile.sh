@@ -43,6 +43,6 @@ sudo docker-compose run \
     "$url"
 
 # Other useful options are:
-# --cookies /data/cookies.txt
+# --cookies /download/cookies.txt
 # -o cursor=<position>
 set +x
