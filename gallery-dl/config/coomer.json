@@ -1,0 +1,15 @@
+{
+    "extractor": {
+        "coomer": {
+            "#directory": "single per-site archive; files organized by service and creator: {category}/{service}/{user}",
+            "directory": [
+                "{category}",
+                "{service}",
+                "{user}"
+            ],
+
+            "#original": "without this, images resolve to thumbnails and videos are skipped entirely (no thumbnail fallback exists for video)",
+            "original": true
+        }
+    }
+}
