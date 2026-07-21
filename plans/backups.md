@@ -18,23 +18,9 @@ The NAS has a Restic REST server deployed and Synology snapshots enabled, but th
 - Add an Alertmanager rule: `ResticBackupStale` if no successful backup in 48h
 
 **Files:**
-- New `restic-backup/` directory
-- `docker-compose.yml` — new service
-- `prometheus/alerts.yml` — new alert rule
-
----
-
-## 2. PostgreSQL Backup for Immich
-
-**Problem:** Immich's PostgreSQL database holds all photo metadata, face recognition data, and user accounts. A volume corruption would lose all this. Synology snapshots help but a logical backup is more portable.
-
-**Recommendation:**
-- Add a `postgres-backup` sidecar container (e.g., `prodrigestivill/postgres-backup-local`) that runs `pg_dump` on a schedule
-- Store dumps in the Restic-backed-up directory for offsite protection
-- Retain 7 daily + 4 weekly dumps locally
-
-**Files:**
-- `docker-compose.yml` — new service, new volume mount for dump output
+- New `stacks/infra/restic-backup/` directory (alongside restic-rest-server in the infra stack)
+- `stacks/infra/docker-compose.yml` — new service
+- `stacks/monitoring/prometheus/alerts.yml` — new alert rule
 
 ---
 
@@ -49,7 +35,7 @@ The NAS has a Restic REST server deployed and Synology snapshots enabled, but th
 - Even 100GB of critical data (configs, DB dumps, irreplaceable photos) costs ~$0.50/month
 
 **Files:**
-- `restic-backup/` configuration (second repository target)
+- `stacks/infra/restic-backup/` configuration (second repository target)
 
 ---
 
@@ -57,8 +43,7 @@ The NAS has a Restic REST server deployed and Synology snapshots enabled, but th
 
 1. Trigger a manual backup run and verify it completes without errors
 2. Check Restic repository with `restic check` and `restic snapshots`
-3. Verify `pg_dump` output files appear in the expected directory with correct timestamps
-4. Confirm Prometheus metric for last successful backup is updated
-5. Trigger the `ResticBackupStale` alert by advancing the threshold and verify email delivery
-6. For offsite: verify a snapshot appears in the B2 bucket
-7. Test a restore from both local and offsite repositories for a non-critical file
+3. Confirm Prometheus metric for last successful backup is updated
+4. Trigger the `ResticBackupStale` alert by advancing the threshold and verify email delivery
+5. For offsite: verify a snapshot appears in the B2 bucket
+6. Test a restore from both local and offsite repositories for a non-critical file

@@ -15,13 +15,13 @@ Expose NAS services to friends securely. Behind CGNAT, so no port forwarding. Cl
 
 ### 2. Deploy Authelia
 
-- [ ] Create `authelia/configuration.yml` (session domain `hashhar.com`, file-based user DB, TOTP 2FA, SQLite storage, SMTP via Gmail)
-- [ ] Create `authelia/users_database.yml` (admin user with bcrypt-hashed password)
-- [ ] Add Authelia service to `docker-compose.yml` (image `authelia/authelia:4`, bridge network IP `172.18.0.17`)
+- [ ] Create `stacks/infra/authelia/configuration.yml` (session domain `hashhar.com`, file-based user DB, TOTP 2FA, SQLite storage, SMTP via Gmail)
+- [ ] Create `stacks/infra/authelia/users_database.yml` (admin user with bcrypt-hashed password)
+- [ ] Add the Authelia service to the **infra** stack (`stacks/infra/docker-compose.yml`, image `authelia/authelia:4`). No static IP pin needed — it's reached by container name (`authelia`) over `nas_bridge`, and the bridge's `--ip-range` carve-out keeps dynamic IPs off the pinned range. (Supersedes the old `172.18.0.17` allocation.)
 
 ### 3. Modify Caddyfile for forward_auth
 
-- [ ] Add `proxy-host-protected` snippet with `forward_auth authelia:9091` to `caddy/Caddyfile`
+- [ ] Add `proxy-host-protected` snippet with `forward_auth authelia:9091` to `stacks/infra/caddy/Caddyfile`
 - [ ] Add `authelia` to the `map` block for known subdomains
 - [ ] Add unprotected `proxy-host` route for `authelia` itself (the login portal)
 - [ ] Change admin services to use `proxy-host-protected`: qbittorrent, syncthing, restic-rest-server, prometheus, grafana
@@ -33,6 +33,18 @@ Expose NAS services to friends securely. Behind CGNAT, so no port forwarding. Cl
 - [ ] Create Plex accounts (via plex.tv sharing)
 - [ ] Create Immich accounts (via admin UI)
 - [ ] Share URLs: `https://plex.nas.ts.hashhar.com`, `https://immich.nas.ts.hashhar.com`
+
+## Unrelated backlog
+
+### Switch hardcoded desktop LAN IP to MagicDNS
+
+The desktop GPU box is addressed by its hardcoded LAN IP `192.168.1.40` in
+several places; move these to a Tailscale MagicDNS name so the box is reachable
+regardless of network:
+
+- [ ] `stacks/photos/immich/immich.json` — first `machineLearning.urls` entry (`http://192.168.1.40:3003`)
+- [ ] `DESKTOP_IP` in the remote-transcode setup (`README.md` remote-worker section, `stacks/photos/immich/systemd/*.tpl`)
+- [ ] `plans/llm.md` — Ollama `OLLAMA_BASE_URL` (`http://192.168.1.40:11434`)
 
 ## Authentication Tiers
 
