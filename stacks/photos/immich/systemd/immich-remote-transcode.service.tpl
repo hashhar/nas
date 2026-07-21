@@ -14,8 +14,8 @@ Environment=DESKTOP_IP=${DESKTOP_IP}
 Environment=IMMICH_UPLOAD_LOCATION=${DATA_MOUNT}/Personal/Pictures/immich/upload
 Environment=IMMICH_SYNCED_LIBRARY_LOCATION=${DATA_MOUNT}/Personal/Pictures/Synced
 WorkingDirectory=${NAS_REPO_DIR}
-ExecStart=/usr/sbin/docker compose -f immich/docker-compose.remote-transcode.yml up -d
-ExecStop=/usr/sbin/docker compose -f immich/docker-compose.remote-transcode.yml down
+ExecStart=/usr/sbin/docker compose -f stacks/photos/immich/docker-compose.remote-transcode.yml up -d
+ExecStop=/usr/sbin/docker compose -f stacks/photos/immich/docker-compose.remote-transcode.yml down
 
 [Install]
 WantedBy=multi-user.target

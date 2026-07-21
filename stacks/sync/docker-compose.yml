@@ -1,0 +1,17 @@
+name: sync
+
+services:
+  syncthing:
+    image: syncthing/syncthing:2.1.2
+    container_name: syncthing
+    hostname: Radon # name of syncthing instance
+    environment:
+      - PUID=$SYNCTHING_UID
+      - PGID=$SYNCTHING_GID
+      - TZ=$TZ
+    volumes:
+      - $DOCKER_DATA/syncthing:/var/syncthing
+      - $DATA_ROOT/Personal/Pictures/Synced:$DATA_ROOT/Personal/Pictures/Synced
+    network_mode: "host" # required for local discovery to work
+    # Uses ports 8384 (UI), 22000/tcp,udp (file transfer) and 21027/udp (local discovery)
+    restart: unless-stopped

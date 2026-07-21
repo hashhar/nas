@@ -1,0 +1,101 @@
+name: monitoring
+
+services:
+  prometheus:
+    image: prom/prometheus:v3.13.1
+    container_name: prometheus
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/prometheus"]
+    environment:
+      - RESTIC_REST_SERVER_PORT=$RESTIC_REST_SERVER_PORT
+    volumes:
+      - ./prometheus/entrypoint.sh:/entrypoint.sh:ro
+      - ./prometheus/prometheus.yml.tpl:/etc/prometheus/prometheus.yml.tpl:ro
+      - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - $DOCKER_DATA/prometheus/data:/prometheus
+    networks:
+      - bridge
+    restart: unless-stopped
+
+  grafana:
+    depends_on:
+      - prometheus
+    image: grafana/grafana:13.1.0
+    container_name: grafana
+    volumes:
+      - $DOCKER_DATA/grafana/data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/etc/grafana/dashboards:ro
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      # Password set via secrets.env
+      - GF_SERVER_ROOT_URL=https://grafana.nas.hashhar.com
+    env_file:
+      - grafana/secrets.env
+    networks:
+      - bridge
+    restart: unless-stopped
+
+  alertmanager:
+    build:
+      context: alertmanager
+    image: hashhar/alertmanager:local
+    container_name: alertmanager
+    env_file:
+      - alertmanager/secrets.env
+    networks:
+      - bridge
+    restart: unless-stopped
+
+  smartctl-exporter:
+    image: prometheuscommunity/smartctl-exporter:v0.14.0
+    container_name: smartctl-exporter
+    # Image defaults to nobody but /dev/sata* are brw------- root:root
+    user: "root"
+    cap_add:
+      - SYS_RAWIO
+    devices:
+      - "/dev/sata1"
+      - "/dev/sata2"
+      - "/dev/sata3"
+      - "/dev/sata4"
+      - "/dev/sata5"
+      - "/dev/sata6"
+      - "/dev/sata7"
+      - "/dev/sata8"
+    # No udev inside the container so `smartctl --scan` auto-discovery finds nothing;
+    # devices must be listed explicitly
+    command:
+      - "--smartctl.device=/dev/sata1"
+      - "--smartctl.device=/dev/sata2"
+      - "--smartctl.device=/dev/sata3"
+      - "--smartctl.device=/dev/sata4"
+      - "--smartctl.device=/dev/sata5"
+      - "--smartctl.device=/dev/sata6"
+      - "--smartctl.device=/dev/sata7"
+      - "--smartctl.device=/dev/sata8"
+    networks:
+      - bridge
+    restart: unless-stopped
+
+  node-exporter:
+    image: prom/node-exporter:v1.12.1
+    container_name: node-exporter
+    pid: "host"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+      - "--collector.filesystem.mount-points-exclude=^/(dev|proc|sys|run|snap)($|/)"
+    networks:
+      - bridge
+    restart: unless-stopped
+
+networks:
+  bridge:
+    external: true
+    name: nas_bridge

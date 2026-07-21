@@ -10,8 +10,8 @@ Type=oneshot
 RemainAfterExit=yes
 User=${DESKTOP_USER}
 WorkingDirectory=${NAS_REPO_DIR}
-ExecStart=/usr/sbin/docker compose -f immich/docker-compose.remote-ml-cuda.yml up -d
-ExecStop=/usr/sbin/docker compose -f immich/docker-compose.remote-ml-cuda.yml down
+ExecStart=/usr/sbin/docker compose -f stacks/photos/immich/docker-compose.remote-ml-cuda.yml up -d
+ExecStop=/usr/sbin/docker compose -f stacks/photos/immich/docker-compose.remote-ml-cuda.yml down
 
 [Install]
 WantedBy=multi-user.target
