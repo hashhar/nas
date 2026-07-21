@@ -17,10 +17,10 @@ The NAS already has Prometheus for metrics collection and Alertmanager for email
 - This enables log searching, filtering by service, and log-based alerting from one UI
 
 **Files:**
-- New `loki/` directory (config file)
-- New `promtail/` directory (config file)
-- `docker-compose.yml` — new `loki` and `promtail` services
-- `grafana/provisioning/datasources/` — Loki datasource config
+- New `stacks/monitoring/loki/` directory (config file)
+- New `stacks/monitoring/promtail/` directory (config file)
+- `stacks/monitoring/docker-compose.yml` — new `loki` and `promtail` services
+- `stacks/monitoring/grafana/provisioning/datasources/` — Loki datasource config
 
 ---
 
@@ -41,7 +41,7 @@ The NAS already has Prometheus for metrics collection and Alertmanager for email
 
 | Component | Before | After |
 |-----------|--------|-------|
-| Alert rule definition | `prometheus/alerts.yml` (YAML) | Grafana provisioning YAML or UI |
+| Alert rule definition | `stacks/monitoring/prometheus/alerts.yml` (YAML) | Grafana provisioning YAML or UI |
 | Alert routing/grouping | Standalone Alertmanager container | Grafana's built-in Alertmanager |
 | Notification channel | Email via Alertmanager config | Email via Grafana contact points |
 | Log-based alerts | Not possible | Possible via Loki datasource queries |
@@ -50,23 +50,23 @@ The NAS already has Prometheus for metrics collection and Alertmanager for email
 **What stays the same:**
 - Prometheus continues to scrape and store metrics (no change)
 - PromQL alert expressions remain identical — just defined in Grafana instead of `alerts.yml`
-- Gmail SMTP for email notifications (same credentials, same `secrets.env` pattern)
+- Gmail SMTP for email notifications (same credentials, same SOPS-encrypted `secrets.enc.env` pattern)
 
 **Migration steps:**
 1. Configure SMTP in Grafana — add Gmail SMTP settings via environment variables or `grafana.ini`
 2. Create email contact point in Grafana (replaces Alertmanager's receiver config)
-3. Port the 7 existing PromQL rules from `prometheus/alerts.yml` into Grafana alert provisioning (`grafana/provisioning/alerting/`)
+3. Port the 7 existing PromQL rules from `stacks/monitoring/prometheus/alerts.yml` into Grafana alert provisioning (`stacks/monitoring/grafana/provisioning/alerting/`)
 4. Add log-based alert rules using LogQL (e.g., alert on error log spikes across services)
-5. Remove Alertmanager — delete `alertmanager/` directory, remove service from `docker-compose.yml`, remove from `dependabot.yml`
-6. Clean up Prometheus — remove `alerting:` and `rule_files:` sections from `prometheus.yml.tpl`, delete `prometheus/alerts.yml`
+5. Remove Alertmanager — delete `stacks/monitoring/alertmanager/` directory, remove the service from `stacks/monitoring/docker-compose.yml`, and drop its `/stacks/monitoring/alertmanager` entry from the `docker` ecosystem in `dependabot.yml` (the `/stacks/monitoring` compose entry stays)
+6. Clean up Prometheus — remove `alerting:` and `rule_files:` sections from `stacks/monitoring/prometheus/prometheus.yml.tpl`, delete `stacks/monitoring/prometheus/alerts.yml`
 
 **Files:**
-- `grafana/provisioning/alerting/` — new alert rule and contact point provisioning configs
-- `grafana/secrets.env` — add SMTP credentials (moved from `alertmanager/secrets.env`)
-- `prometheus/prometheus.yml.tpl` — remove alerting/rule_files sections
-- `prometheus/alerts.yml` — delete
-- `alertmanager/` — delete entire directory
-- `docker-compose.yml` — remove `alertmanager` service
+- `stacks/monitoring/grafana/provisioning/alerting/` — new alert rule and contact point provisioning configs
+- `stacks/monitoring/grafana/secrets.enc.env` — add SMTP credentials (moved from `stacks/monitoring/alertmanager/secrets.enc.env`)
+- `stacks/monitoring/prometheus/prometheus.yml.tpl` — remove alerting/rule_files sections
+- `stacks/monitoring/prometheus/alerts.yml` — delete
+- `stacks/monitoring/alertmanager/` — delete entire directory
+- `stacks/monitoring/docker-compose.yml` — remove `alertmanager` service
 - `.github/dependabot.yml` — remove `alertmanager` entry
 - `README.md` — update Alertmanager references, update Special Instructions
 

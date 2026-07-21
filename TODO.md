@@ -15,13 +15,13 @@ Expose NAS services to friends securely. Behind CGNAT, so no port forwarding. Cl
 
 ### 2. Deploy Authelia
 
-- [ ] Create `authelia/configuration.yml` (session domain `hashhar.com`, file-based user DB, TOTP 2FA, SQLite storage, SMTP via Gmail)
-- [ ] Create `authelia/users_database.yml` (admin user with bcrypt-hashed password)
-- [ ] Add Authelia service to `docker-compose.yml` (image `authelia/authelia:4`, bridge network IP `172.18.0.17`)
+- [ ] Create `stacks/infra/authelia/configuration.yml` (session domain `hashhar.com`, file-based user DB, TOTP 2FA, SQLite storage, SMTP via Gmail)
+- [ ] Create `stacks/infra/authelia/users_database.yml` (admin user with bcrypt-hashed password)
+- [ ] Add the Authelia service to the **infra** stack (`stacks/infra/docker-compose.yml`, image `authelia/authelia:4`). No static IP pin needed — it's reached by container name (`authelia`) over `nas_bridge`, and the bridge's `--ip-range` carve-out keeps dynamic IPs off the pinned range. (Supersedes the old `172.18.0.17` allocation.)
 
 ### 3. Modify Caddyfile for forward_auth
 
-- [ ] Add `proxy-host-protected` snippet with `forward_auth authelia:9091` to `caddy/Caddyfile`
+- [ ] Add `proxy-host-protected` snippet with `forward_auth authelia:9091` to `stacks/infra/caddy/Caddyfile`
 - [ ] Add `authelia` to the `map` block for known subdomains
 - [ ] Add unprotected `proxy-host` route for `authelia` itself (the login portal)
 - [ ] Change admin services to use `proxy-host-protected`: qbittorrent, syncthing, restic-rest-server, prometheus, grafana

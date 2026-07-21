@@ -2,16 +2,21 @@ version: 2
 updates:
   - package-ecosystem: "docker"
     directories:
-      - "/alertmanager"
-      - "/caddy"
-      - "/gallery-dl"
+      - "/stacks/infra/caddy"
+      - "/stacks/monitoring/alertmanager"
+      - "/stacks/media/gallery-dl"
     schedule:
       interval: "weekly"
 
   - package-ecosystem: "docker-compose"
     directories:
-      - "/"
-      - "/immich"
+      - "/stacks/infra"
+      - "/stacks/monitoring"
+      - "/stacks/media"
+      - "/stacks/photos"
+      - "/stacks/sync"
+      # Remote-worker overlays for the desktop GPU box live here.
+      - "/stacks/photos/immich"
     schedule:
       interval: "weekly"
     ignore:
