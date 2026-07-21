@@ -1,0 +1,54 @@
+name: infra
+
+services:
+  caddy:
+    build:
+      context: caddy
+    image: hashhar/caddy:local
+    container_name: caddy
+    env_file:
+      - caddy/secrets.env
+    environment:
+      - PLEX_PORT=32400
+      - QBITTORRENT_PORT=$QBITTORRENT_PORT
+      - SYNCTHING_PORT=8384
+      - RESTIC_REST_SERVER_PORT=$RESTIC_REST_SERVER_PORT
+      - IMMICH_PORT=$IMMICH_PORT
+      - HOST_ADDRESS=syno.hashhar.com # IP/port resolving to NAS - for connecting to containers using host networks
+    volumes:
+      - $DOCKER_DATA/caddy/data:/data
+      - caddy_config:/config
+    networks:
+      # x.x.x.3 to match last octet to IP of Synology for easy remembering
+      macvlan:
+        ipv4_address: "192.168.2.3"
+      bridge:
+        ipv4_address: "172.18.0.3"
+    restart: unless-stopped
+
+  restic-rest-server:
+    image: restic/rest-server:0.14.0
+    container_name: restic-rest-server
+    user: "$RESTIC_UID:$RESTIC_GID"
+    environment:
+      # TLS is being provided via proxying through caddy
+      - OPTIONS=--append-only --group-accessible-repos --private-repos --prometheus --prometheus-no-auth
+    volumes:
+      # /data is the default repo location in Docker image
+      - $RESTIC_ROOT/restic:/data
+    networks:
+      - bridge
+    restart: unless-stopped
+
+networks:
+  macvlan:
+    external: true
+    name: nas_macvlan
+  bridge:
+    external: true
+    name: nas_bridge
+
+volumes:
+  # Regenerated from the Caddyfile on every boot — nothing to restore, so it
+  # stays a named volume outside restic's $DOCKER_DATA sweep.
+  caddy_config:

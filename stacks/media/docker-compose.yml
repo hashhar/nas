@@ -1,0 +1,73 @@
+name: media
+
+services:
+  plex:
+    image: lscr.io/linuxserver/plex:1.43.3.10828-00f62d37d-ls315
+    container_name: plex
+    environment:
+      - PUID=$PLEX_UID
+      - PGID=$PLEX_GID
+      - TZ=$TZ
+      - VERSION=docker
+    volumes:
+      - $DOCKER_DATA/plex/config:/config
+      - $DOCKER_DATA/plex/transcode:/transcode
+      - $DATA_ROOT/Media:$DATA_ROOT/Media:ro # read-only (will prevent us from deleting things from the UI)
+    networks:
+      - bridge
+    ports:
+      # See list of ports at https://support.plex.tv/articles/201543147
+      # Plex Media Server port is not exposed - reachable via caddy
+      - "32410-32414:32410-32414/udp" # GDM network discovery
+      - "32469:32469" # DLNA server
+    restart: unless-stopped
+
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:5.2.3
+    container_name: qbittorrent
+    env_file:
+      - qbittorrent/secrets.env
+    environment:
+      - PUID=$QBITTORRENT_UID
+      - PGID=$QBITTORRENT_GID
+      - TZ=$TZ
+      - WEBUI_PORT=$QBITTORRENT_PORT
+      - QBITTORRENT_LISTENING_PORT=$QBITTORRENT_LISTENING_PORT
+      - TORRENT_ROOT=$DATA_ROOT/Staging
+    volumes:
+      - $DATA_ROOT/Staging:$DATA_ROOT/Staging
+      - $DOCKER_DATA/qbittorrent/config:/config
+      - ./qbittorrent/qBittorrent.conf.tpl:/default-config-templates/qBittorrent.conf.tpl:ro
+      - ./qbittorrent/watched_folders.json.tpl:/default-config-templates/watched_folders.json.tpl:ro
+      - ./qbittorrent/categories.json:/default-config-templates/categories.json:ro
+      - ./qbittorrent/99-overwrite-config:/custom-cont-init.d/99-overwrite-config:ro
+    networks:
+      - bridge
+    ports:
+      - "$QBITTORRENT_LISTENING_PORT:$QBITTORRENT_LISTENING_PORT"
+      - "$QBITTORRENT_LISTENING_PORT:$QBITTORRENT_LISTENING_PORT/udp"
+    restart: unless-stopped
+
+  gallery-dl:
+    # Only runs when this profile is enabled
+    profiles:
+      - gallery-dl
+    build:
+      context: gallery-dl
+    image: hashhar/gallery-dl:latest-0
+    container_name: gallery-dl
+    environment:
+      - PUID=$SYNCTHING_UID
+      - PGID=$SYNCTHING_GID
+    volumes:
+      - ./gallery-dl/config:/var/gallery-dl/.config/gallery-dl:ro
+      - $DOCKER_DATA/gallery-dl/data:/data
+      - $DATA_ROOT/Personal/Pictures/Synced/Wallpapers/Fun:/download
+    network_mode: "host"
+    # this is expected to run and exit when done
+    restart: "no"
+
+networks:
+  bridge:
+    external: true
+    name: nas_bridge

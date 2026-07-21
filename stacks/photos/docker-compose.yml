@@ -1,0 +1,86 @@
+name: photos
+
+services:
+  immich-server:
+    depends_on:
+      immich-redis:
+        condition: service_healthy
+      immich-database:
+        condition: service_healthy
+    image: ghcr.io/immich-app/immich-server:v3.0.3
+    container_name: immich-server
+    user: "$IMMICH_UID:$IMMICH_GID"
+    environment:
+      - DB_HOSTNAME=immich-database
+      - DB_USERNAME=postgres
+      - DB_DATABASE_NAME=immich
+      - REDIS_HOSTNAME=immich-redis
+      - IMMICH_TRUSTED_PROXIES=172.18.0.3
+      - IMMICH_TELEMETRY_INCLUDE=all
+      - IMMICH_CONFIG_FILE=$IMMICH_CONFIG_FILE
+      - TZ=$TZ
+    env_file:
+      - immich/secrets.env
+    volumes:
+      - $DATA_ROOT/Personal/Pictures/immich/upload:/data
+      - /etc/localtime:/etc/localtime:ro
+      - ./immich/immich.json:$IMMICH_CONFIG_FILE:ro
+      - $DATA_ROOT/Personal/Pictures/Synced:$DATA_ROOT/Personal/Pictures/Synced
+    healthcheck:
+      disable: false
+    networks:
+      - bridge
+    restart: unless-stopped
+
+  immich-machine-learning:
+    image: ghcr.io/immich-app/immich-machine-learning:v3.0.3
+    container_name: immich-machine-learning
+    volumes:
+      - immich_model_cache:/cache
+    networks:
+      - bridge
+    restart: unless-stopped
+
+  immich-redis:
+    image: valkey/valkey:9-alpine
+    container_name: immich-redis
+    healthcheck:
+      test: redis-cli ping || exit 1
+    networks:
+      bridge:
+        ipv4_address: "172.18.0.10"
+    restart: unless-stopped
+
+  immich-database:
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0
+    container_name: immich-database
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: immich
+      POSTGRES_INITDB_ARGS: '--data-checksums'
+      DB_STORAGE_TYPE: 'HDD'
+    env_file:
+      - immich/secrets.env
+    volumes:
+      - immich_postgres_data:/var/lib/postgresql/data
+    shm_size: 128mb
+    healthcheck:
+      disable: false
+    networks:
+      bridge:
+        ipv4_address: "172.18.0.11"
+    restart: unless-stopped
+
+networks:
+  bridge:
+    external: true
+    name: nas_bridge
+
+volumes:
+  # Named volumes on purpose — neither is a file-level restore source:
+  # the model cache re-downloads on first ML request, and the live Postgres
+  # data dir is backed up via Immich's scheduled logical dump (written to
+  # <UPLOAD_LOCATION>/backups on $DATA_ROOT), never by file copies, so it
+  # deliberately lives outside restic's $DOCKER_DATA sweep.
+  immich_model_cache:
+  immich_postgres_data:
