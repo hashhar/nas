@@ -14,7 +14,7 @@ services:
       - IMMICH_PORT=$IMMICH_PORT
       - HOST_ADDRESS=syno.hashhar.com # IP/port resolving to NAS - for connecting to containers using host networks
     volumes:
-      - caddy_data:/data
+      - $DOCKER_DATA/caddy/data:/data
       - caddy_config:/config
     networks:
       # x.x.x.3 to match last octet to IP of Synology for easy remembering
@@ -140,7 +140,7 @@ services:
       - ./prometheus/entrypoint.sh:/entrypoint.sh:ro
       - ./prometheus/prometheus.yml.tpl:/etc/prometheus/prometheus.yml.tpl:ro
       - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
-      - prometheus_data:/prometheus
+      - $DOCKER_DATA/prometheus/data:/prometheus
     networks:
       - bridge
     restart: unless-stopped
@@ -152,7 +152,7 @@ services:
     image: grafana/grafana:13.1.0
     container_name: grafana
     volumes:
-      - grafana_data:/var/lib/grafana
+      - $DOCKER_DATA/grafana/data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./grafana/dashboards:/etc/grafana/dashboards:ro
     environment:
@@ -311,9 +311,10 @@ networks:
         - subnet: "172.18.0.0/16"
 
 volumes:
-  caddy_data:
+  # Named volumes are reserved for data that is either regenerated on start
+  # (caddy_config), re-downloadable (immich_model_cache), or backed up via a
+  # logical dump instead of file copies (immich_postgres_data). Everything
+  # file-restorable lives under $DOCKER_DATA so restic sweeps it up.
   caddy_config:
-  prometheus_data:
-  grafana_data:
   immich_postgres_data:
   immich_model_cache:
