@@ -96,6 +96,8 @@ Plex mounts Media as read-only. qBittorrent writes to Staging. The *arr apps (no
 
 See [Directory Setup in README](README.md#directory-setup) for the full tree.
 
+**Volume policy (bind mount vs named volume).** A service's persistent state gets a **bind mount under `$DOCKER_DATA`** by default — that path is what restic sweeps, and restore is uniform (drop the files back, `chown`, `up`). Use a **named volume** *only* when the data is one of: regenerated on boot (nothing to restore), a large re-downloadable cache, or backed up by a separate logical dump rather than a file copy. That last rule keeps hot/torn-prone or bulky-regenerable data out of restic's `$DOCKER_DATA` sweep with no exclude rules, since named volumes live under Docker's own volume dir.
+
 ### User/group isolation
 
 Each service runs as a dedicated Synology user with a specific UID/GID (defined in `.env`). Groups control share-level access: `service_ro` for read-only (plex), `service_rw` for read-write (qbittorrent, syncthing, immich), `backup` for restic.
