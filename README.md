@@ -301,20 +301,22 @@ structure (including additional manually managed folders):
 │   ├── OneDrive                       [9]
 │   ├── Pictures
 │   │   ├── Manual                     [10]
-│   │   └── Synced                     [11]
-│   └── Software                       [12]
-├── Scratch                            [13]
+│   │   ├── Synced                     [11]
+│   │   └── immich
+│   │       └── upload                 [12]
+│   └── Software                       [13]
+├── Scratch                            [14]
 └── Staging
-    ├── Torrents                       [14]
+    ├── Torrents                       [15]
     │   ├── Books
     │   ├── Comics
     │   ├── Movies
     │   ├── Music
     │   ├── TV
     │   └── temp
-    ├── YouTube                        [15]
-    │   └── _archive                   [16]
-    └── _torrents                      [17]
+    ├── YouTube                        [16]
+    │   └── _archive                   [17]
+    └── _torrents                      [18]
         ├── Completed
         └── Watching
             ├── Books
@@ -337,7 +339,7 @@ structure (including additional manually managed folders):
 > mkdir -p "$root"/Games/{Setups,Steam}
 > mkdir -p "$root"/Media/Sports
 > mkdir -p "$root"/{Media,Staging}/YouTube/_archive
-> mkdir -p "$root"/Personal/{Pictures/{Synced,Manual},Software}
+> mkdir -p "$root"/Personal/{Pictures/{Synced,Manual,immich/upload},Software}
 > mkdir -p "$root"/Scratch
 >
 > # May want to instead let permissions get managed by apps themselves when
@@ -351,6 +353,7 @@ structure (including additional manually managed folders):
 > # Personal
 > sudo chown -R "$private_user":users "$root"/Personal # over SMB group is always users
 > sudo chown -R syncthing:service_rw "$root"/Personal/Pictures/Synced
+> sudo chown -R immich:service_rw "$root"/Personal/Pictures/immich
 > # Staging
 > sudo chown -R qbittorrent:service_rw "$root"/Staging
 > sudo chown -R ytdl:service_rw "$root"/Staging/YouTube
@@ -379,20 +382,41 @@ structure (including additional manually managed folders):
 9.  `/Personal/OneDrive`: A mirror of OneDrive maintained using CloudSync.
 10.  `/Personal/Pictures/Manual`: Manually managed pictures directory.
 11. `/Personal/Pictures/Synced`: Syncthing managed pictures directory.
-12. `/Personal/Software`: Software installers and archives including OS ISOs.
+12. `/Personal/Pictures/immich/upload`: Immich upload/library location (mounted
+    as `/data` in `immich-server`).
+13. `/Personal/Software`: Software installers and archives including OS ISOs.
 
-13. `/Scratch`: Temporary workspace.
+14. `/Scratch`: Temporary workspace.
 
-14. `/Staging/Torrents`: Download root for torrent apps.  
+15. `/Staging/Torrents`: Download root for torrent apps.  
     All torrent downloads get downloaded here into one of the subdirectories based on
     their category. This exactly mirrors the structure in `/Media` so that each of the
     *arr apps can move finished downloads to `/Media`.
-15. `/Staging/YouTube`: In progress YouTube channel, playlist or video downloads.
-16. `/Staging/YouTube/_archive`: Archive files created by `yt-dlp`, scripts and `yt-dlp`
+16. `/Staging/YouTube`: In progress YouTube channel, playlist or video downloads.
+17. `/Staging/YouTube/_archive`: Archive files created by `yt-dlp`, scripts and `yt-dlp`
     config files used for a particular download.
-17. `/Staging/_torrents`: .torrent file root for torrent apps.  
+18. `/Staging/_torrents`: .torrent file root for torrent apps.  
     All .torrent files get placed here into `Completed` once downloaded. Any files
     placed into `Watching` get queued for downloads.
+
+## Appdata Directories
+
+Service state lives in bind mounts under `$DOCKER_DATA`
+(`/volume1/docker/appdata`). Create them before the first `up`:
+
+```sh
+appdata='/volume1/docker/appdata'
+sudo mkdir -p "$appdata"/{caddy/data,plex/{config,transcode},qbittorrent/config,syncthing,gallery-dl/data,grafana,prometheus}
+sudo chown -R plex:service_ro "$appdata"/plex
+sudo chown -R qbittorrent:service_rw "$appdata"/qbittorrent
+sudo chown -R syncthing:service_rw "$appdata"/syncthing "$appdata"/gallery-dl
+# grafana and prometheus containers create and own data/ themselves
+# (image-internal users); caddy runs as root - no chown needed
+
+# restic-rest-server repo root
+sudo mkdir -p /volume1/backups/restic
+sudo chown -R restic:backup /volume1/backups/restic
+```
 
 ## Obtain the UID and GID of Users
 
@@ -443,7 +467,9 @@ each with its own `docker-compose.yml` and co-located service config dirs.
    age key ([Working with encrypted secrets](#working-with-encrypted-secrets)).
 4. Create the shared external networks: the two `docker network create`
    commands in the [macvlan appendix](#docker-macvlan-networking).
-5. Build and start every stack, `infra` first:
+5. Create the data and appdata directory trees with correct ownership
+   ([Directory Setup](#directory-setup), [Appdata Directories](#appdata-directories)).
+6. Build and start every stack, `infra` first:
 
    ```sh
    for stack in infra monitoring photos media sync; do
