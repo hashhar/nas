@@ -138,6 +138,76 @@ rate_limit {
 
 ---
 
+## 8. User/Group Least-Privilege & Ownership-Drift Elimination
+
+**Problem:** Two structural weaknesses in the user/group design:
+
+1. `service_rw` is a single shared group with read/write on the whole `data`
+   share. Every rw service (`qbittorrent`, `arr`, `ytdl`, `syncthing`,
+   `immich`) can read/write *all* the others' data — a breakout in the most
+   exposed container (`qbittorrent`, which fetches untrusted torrents) reaches
+   the photo library and Personal data. The per-service UIDs give only the
+   appearance of isolation; the shared group dissolves it.
+2. Ownership is set once via `chown -R` with no inheritance mechanism. Every
+   file an app or SMB write creates drifts from the baseline — the ownership
+   audit command exists only to catch this.
+
+### 8.1 Split `service_rw` into per-domain groups
+
+- `media_rw` (rw) — members `arr`, `qbittorrent`, `ytdl`; owns `Media` +
+  `Staging`. `plex` reads via its existing `:ro` bind mount, so it needs no
+  write access and no membership.
+- `immich` and `syncthing` each own their own tree
+  (`Personal/Pictures/immich`, `Personal/Pictures/Synced`) under their **own
+  private group** — the trees are disjoint, so no shared group is needed.
+- Effect: a `qbittorrent` compromise is bounded to Media + Staging instead of
+  all of `data`.
+- Trade-off: Synology share permissions are share-level, so per-folder scoping
+  (`media_rw` only on Media) must be expressed with folder/POSIX ACLs, not the
+  DSM share-permission table.
+
+**Files:**
+- README `#### Groups` / `#### Users` tables — replace `service_rw` with
+  `media_rw` and per-service groups
+- `.env` — replace the shared `*_GID=65539` values with the new GIDs
+- each stack's `docker-compose.yml` — updated `PGID` / `user:` values
+- README ownership `chown -R` block — retarget to the new groups
+
+### 8.2 Make ownership self-perpetuating (kill drift at the source)
+
+- `chmod g+s` on every managed directory so new entries inherit the parent
+  group instead of the creator's primary group.
+- Default ACLs so new files get correct group perms regardless of the writer's
+  umask:
+  ```sh
+  setfacl -R -m g:media_rw:rwX -m d:g:media_rw:rwX /volume1/data/Media /volume1/data/Staging
+  setfacl -R -m g:backup:rX    -m d:g:backup:rX    /volume1/docker/appdata
+  ```
+- Demotes the ownership-audit scan from a routine chore to a rare safety net.
+- Caveat: DSM overlays Synology ACLs on POSIX — verify `setfacl` defaults
+  survive File Station and share-permission re-application before relying on
+  them.
+
+### 8.3 Pin a consistent umask
+
+- The group scheme assumes files are group-readable; a container writing `0700`
+  breaks `plex`/`restic` reads invisibly despite correct group ownership.
+- Set `UMASK=002` for linuxserver images (`plex`, `qbittorrent`) and the
+  equivalent for `immich`/`syncthing`; document the expectation.
+
+**Files:** each stack's `docker-compose.yml` (`UMASK` env)
+
+### 8.4 Reconcile the SMB `users` group
+
+- SMB forces group `users` — this is the drift the scan keeps catching in
+  `Personal/Pictures/immich` (photos dropped in over SMB that `immich` must
+  read).
+- Set a force-group / default group on that share in Synology's SMB advanced
+  config so those writes land in `immich`'s group directly, instead of relying
+  on periodic re-`chown`.
+
+---
+
 ## Verification
 
 1. `docker compose config` — validate compose file syntax
@@ -151,3 +221,8 @@ rate_limit {
 9. Verify `no-new-privileges` is applied: `docker inspect --format '{{.HostConfig.SecurityOpt}}' <container>`
 10. Verify capabilities dropped: `docker inspect --format '{{.HostConfig.CapDrop}}' <container>`
 11. Verify alertmanager/prometheus configs render correctly after switching from sed to envsubst
+12. Ownership audit command (README) reports zero mismatches after retargeting groups + `setfacl`
+13. `getfacl` on a managed dir shows the expected default (`d:`) ACL entries
+14. Cross-domain isolation: as `qbittorrent`, confirm writes under `Personal/Pictures/immich` are denied
+15. A new file written over SMB into `Personal/Pictures/immich` lands in `immich`'s group and is readable by `immich`
+16. New files created by a service are group-readable (confirms `UMASK` applied)
