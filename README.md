@@ -52,7 +52,7 @@ Create the following shares:
 Additionally follow [Synology Time Machine
 setup](https://kb.synology.com/en-my/DSM/tutorial/How_to_back_up_files_from_Mac_to_Synology_NAS_with_Time_Machine).
 
-Note that enabling Bonjour is onlhy required if you don't want to manually connect to
+Note that enabling Bonjour is only required if you don't want to manually connect to
 the SMB share.
 
 ### File Services
@@ -102,7 +102,7 @@ Set up the groups and users as described below.
 
 ### Security
 
-Enable 2FA for users in adminstrator group under "Account" tab.
+Enable 2FA for users in administrator group under "Account" tab.
 
 Enable account protection under "Account" tab.
 
@@ -164,7 +164,7 @@ Consider enabling conversion on a schedule to save CPU during operational hours.
 
 ## File Station
 
-Under "Mount/Connections" tab in settings allow users in adminstrator or user private
+Under "Mount/Connections" tab in settings allow users in administrator or user private
 groups to mount "Server and Cloud Service".
 
 ## Resource Monitor
@@ -274,15 +274,9 @@ EOF
 
 ## Directory Setup
 
-Each volume within a container gets treated as its own filesystem. This means
-that if we move files across volumes then Docker does a copy and then delete -
-creating unwanted disk IO and temporarily taking up double the space.
-
-So we setup a structure such that everything that our containers need to touch
-lies under a single root.
-
-Here's the structure we are going to follow (which also includes additional
-manually managed folders):
+Everything containers touch lies under a single root so that moves (e.g.
+Staging → Media) are renames instead of cross-filesystem copy+delete. The
+structure (including additional manually managed folders):
 
 ```
 .
@@ -387,7 +381,7 @@ manually managed folders):
 11. `/Personal/Pictures/Synced`: Syncthing managed pictures directory.
 12. `/Personal/Software`: Software installers and archives including OS ISOs.
 
-13. `/Scratch`: This is a temporary workspace which can be used as needed.
+13. `/Scratch`: Temporary workspace.
 
 14. `/Staging/Torrents`: Download root for torrent apps.  
     All torrent downloads get downloaded here into one of the subdirectories based on
@@ -400,7 +394,7 @@ manually managed folders):
     All .torrent files get placed here into `Completed` once downloaded. Any files
     placed into `Watching` get queued for downloads.
 
-## Obtain the PID and GID of Users
+## Obtain the UID and GID of Users
 
 ssh into the system using the normal user (not the dedicated users we created
 above) and run `id <username>` which should output something like:
@@ -557,14 +551,11 @@ See more at:
 
 ### Syncthing
 
-Syncthing needs to use host networking for local discovery to work. So
-Syncthing container's network mode is set to host and we use a DNS name
-pointing to the NAS host (the IP address can be used as well) as the reverse
-proxy target in Caddy.
+Since Syncthing runs on the host network, Caddy's reverse proxy target is a
+DNS name (or IP) pointing to the NAS host itself.
 
-Since Syncthing uses host network we also need to make sure firewall rules
-exist to allow connections to 22000/tcp, 22000/udp (data transfer) and
-21027/udp (local discovery) from all IP addresses.
+The required firewall rules (22000/tcp+udp, 21027/udp from all IPs) are in
+the [Security](#security) table.
 
 Make sure to enable authentication on the web UI.
 
@@ -643,11 +634,8 @@ MACHINE_LEARNING_WORKERS=2 docker compose -f stacks/photos/immich/docker-compose
 MACHINE_LEARNING_WORKERS=3 docker compose -f stacks/photos/immich/docker-compose.remote-ml-cuda.yml up -d
 ```
 
-The CUDA compose file defaults to 2 workers (the CPU file to 1); the env var
-overrides it since the right count varies per machine — see the comment in
-`docker-compose.remote-ml-cuda.yml` for why 2. Verify CUDA is active by
-checking container logs for `CUDAExecutionProvider` with no fallback to
-`CPUExecutionProvider` after it.
+Verify CUDA is active by checking container logs for `CUDAExecutionProvider`
+with no fallback to `CPUExecutionProvider` after it.
 
 Worker URLs and their fallback order live in `stacks/photos/immich/immich.json` >
 `machineLearning.urls`: the desktop's CUDA worker first, the NAS-local worker
@@ -692,7 +680,7 @@ Prerequisites:
 Run at boot via systemd (e.g. WSL2 with `systemd=true` in `/etc/wsl.conf`):
 
 ```sh
-export DESKTOP_USER=<your-user> NAS_REPO_DIR=<path-to-this-repo-checkout> DATA_MOUNT=/mnt/data DESKTOP_IP=192.168.1.40
+export DESKTOP_USER=<your-user> NAS_REPO_DIR=<path-to-this-repo-checkout> DATA_MOUNT=/mnt/data DESKTOP_IP=<worker_ip>
 for svc in immich-remote-ml immich-remote-transcode; do
   envsubst '$DESKTOP_USER,$NAS_REPO_DIR,$DATA_MOUNT,$DESKTOP_IP' \
     < stacks/photos/immich/systemd/$svc.service.tpl | sudo tee /etc/systemd/system/$svc.service
@@ -700,9 +688,6 @@ done
 sudo systemctl daemon-reload
 sudo systemctl enable --now immich-remote-ml.service immich-remote-transcode.service
 ```
-
-`DESKTOP_IP` is this worker's own LAN IP, used by the transcode unit's
-`extra_hosts` entry — see the comment in `docker-compose.remote-transcode.yml`.
 
 Add the storage mount to `/etc/fstab` too, so it survives WSL2 restarts, e.g.
 for a drvfs-mapped Windows drive: `Z: /mnt/data drvfs rw,relatime,nofail 0 0`.
@@ -743,7 +728,7 @@ as the inbuilt Reverse Proxy. Nginx has some rules which redirect any unmatched
 subdomain to the DSM login page. This means that if you reverse proxy
 `nas.example.com` then any request to `other.nas.example.com` would get
 redirected to DSM login page unless you also reverse proxy
-`other.nas.example.com` to some IP and port explcitly. This makes using
+`other.nas.example.com` to some IP and port explicitly. This makes using
 wildcard subdomains a semi-manual process since you have to setup reverse proxy
 entries for every single subdomain in the UI.
 
@@ -760,14 +745,9 @@ etc.
 
 ### Description
 
-Any container running on the macvlan network cannot connect to the physical
-host and neither can the physical host connect to the container on macvlan
-network.  Also any other container not running on the macvlan network is not
-routable from the macvlan network.
-
-This means our reverse proxy will not be able to reach the Synology host nor
-the other way around. Also any other containers running on Synology won't be
-reachable from the reverse proxy making our reverse proxy pretty useless.
+A macvlan network is isolated from the Docker host and from containers on
+other networks (see [the linked article][1]), so a reverse proxy on macvlan
+alone could reach neither the Synology host nor any other container.
 
 To solve this we create three networks:
 
@@ -825,8 +805,6 @@ See [this article][1] for more details.
 [1]: https://web.archive.org/web/20220706105432/https://www.linuxtechi.com/create-use-macvlan-network-in-docker/
 
 ## Tailscale Routing
-
-Our docker-compose stack has two networks, a MacVLAN network with subnet 192.168.2.0/24 and a Docker bridge network with subnet 172.18.0.0/16.
 
 Tailscale binds itself to the primary interface of the Synology, i.e. neither to the MacVLAN or the Docker bridge network. This means while we can use Tailscale to access Synology itself we cannot access anything that's not exposed on the host network.
 
