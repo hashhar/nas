@@ -1,5 +1,8 @@
 [BitTorrent]
+; Placeholder only. gluetun overwrites this via the WebUI API with the port
+; ProtonVPN forwards over NAT-PMP, which changes on every reconnect.
 Session\Port=${QBITTORRENT_LISTENING_PORT}
+Session\UseRandomPort=false
 Session\Preallocation=true
 
 ; Seeding
@@ -47,7 +50,9 @@ AutoDeleteAddedTorrentFile=Never
 Accepted=true
 
 [Network]
-PortForwardingEnabled=true
+; UPnP/NAT-PMP is done by gluetun against the ProtonVPN gateway, not by
+; qbittorrent against the LAN router (which is useless behind CGNAT anyway).
+PortForwardingEnabled=false
 
 [Preferences]
 Advanced\RecheckOnCompletion=true
@@ -62,8 +67,11 @@ WebUI\AuthSubnetWhitelistEnabled=true
 WebUI\AuthSubnetWhitelist=192.168.0.0/22
 WebUI\Username=${QBITTORRENT_WEBUI_USERNAME}
 WebUI\Password_PBKDF2="${QBITTORRENT_WEBUI_PASSWORD}"
-WebUI\UseUPnP=true
+WebUI\UseUPnP=false
+; gluetun shares this network namespace and pushes the forwarded port over the
+; WebUI API from 127.0.0.1, so it needs to skip authentication.
+WebUI\LocalHostAuth=false
 
 ; Connection
 Connection\PortRangeMin=${QBITTORRENT_LISTENING_PORT}
-Connection\UPnP=true
+Connection\UPnP=false

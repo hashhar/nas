@@ -22,6 +22,42 @@ services:
       - "32469:32469" # DLNA server
     restart: unless-stopped
 
+  # ProtonVPN tunnel for qbittorrent, which shares this container's network
+  # stack. gluetun's firewall drops everything that isn't the tunnel, so a
+  # dropped VPN stops torrent traffic instead of leaking it to the ISP link.
+  gluetun:
+    image: qmcgaw/gluetun:v3.41.3
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    env_file:
+      - gluetun/secrets.env
+    environment:
+      - TZ=$TZ
+      - VPN_SERVICE_PROVIDER=protonvpn
+      - VPN_TYPE=wireguard
+      # Closest region to the NAS with a decent pool of port-forwarding servers
+      - SERVER_COUNTRIES=Singapore
+      # Only connect to servers that support NAT-PMP (Proton's "P2P" servers)
+      - PORT_FORWARD_ONLY=on
+      - VPN_PORT_FORWARDING=on
+      # Proton hands out a random forwarded port that changes on every
+      # reconnect, so the listening port has to be pushed into qbittorrent at
+      # runtime rather than baked into qBittorrent.conf.tpl. Binding to the
+      # tunnel interface is a second kill switch on top of gluetun's firewall.
+      - VPN_PORT_FORWARDING_UP_COMMAND=/bin/sh -c 'wget -O- -nv --retry-connrefused --post-data "json={\"listen_port\":{{PORT}},\"current_network_interface\":\"{{VPN_INTERFACE}}\",\"random_port\":false,\"upnp\":false}" http://127.0.0.1:$QBITTORRENT_PORT/api/v2/app/setPreferences'
+      # qbittorrent does not re-establish the mapping after a reconnect unless
+      # the port is reset first, hence the down command.
+      - VPN_PORT_FORWARDING_DOWN_COMMAND=/bin/sh -c 'wget -O- -nv --retry-connrefused --post-data "json={\"listen_port\":0,\"current_network_interface\":\"lo\"}" http://127.0.0.1:$QBITTORRENT_PORT/api/v2/app/setPreferences'
+      # Let caddy reach the qbittorrent web UI from the bridge network
+      - FIREWALL_INPUT_PORTS=$QBITTORRENT_PORT
+      - FIREWALL_OUTBOUND_SUBNETS=172.18.0.0/16
+    networks:
+      - bridge
+    restart: unless-stopped
+
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:5.2.3
     container_name: qbittorrent
@@ -41,11 +77,13 @@ services:
       - ./qbittorrent/watched_folders.json.tpl:/default-config-templates/watched_folders.json.tpl:ro
       - ./qbittorrent/categories.json:/default-config-templates/categories.json:ro
       - ./qbittorrent/99-overwrite-config:/custom-cont-init.d/99-overwrite-config:ro
-    networks:
-      - bridge
-    ports:
-      - "$QBITTORRENT_LISTENING_PORT:$QBITTORRENT_LISTENING_PORT"
-      - "$QBITTORRENT_LISTENING_PORT:$QBITTORRENT_LISTENING_PORT/udp"
+    # Shares gluetun's network stack, so it can have no networks or ports of
+    # its own. Peers reach it through the VPN's forwarded port and caddy
+    # reaches the web UI at gluetun:$QBITTORRENT_PORT.
+    network_mode: "service:gluetun"
+    depends_on:
+      gluetun:
+        condition: service_healthy
     restart: unless-stopped
 
   gallery-dl:
