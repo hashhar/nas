@@ -585,7 +585,58 @@ the [Security](#security) table.
 
 Make sure to enable authentication on the web UI.
 
+### Gluetun (ProtonVPN)
+
+qBittorrent runs inside gluetun's network namespace (`network_mode:
+service:gluetun`) so that all its traffic goes through ProtonVPN and it can use
+ProtonVPN's NAT-PMP port forwarding — the home connection is behind CGNAT, so
+the LAN router cannot forward a listening port.
+
+`stacks/media/gluetun/secrets.enc.env` holds:
+
+- `WIREGUARD_PRIVATE_KEY`: The `PrivateKey` value from a WireGuard
+  configuration generated at
+  <https://account.proton.me/u/0/vpn/WireGuard>. When generating it, pick a
+  **P2P** server, enable **NAT-PMP (port forwarding)** and leave **Moderate
+  NAT off** — Proton cannot do moderate NAT and port forwarding at the same
+  time, and the feature flags are bound to the key, not to the client. The key
+  itself works against every ProtonVPN server, so no other part of the
+  generated config is needed.
+
+Port forwarding requires a paid Proton VPN plan. `PORT_FORWARD_ONLY=on` in
+`stacks/media/docker-compose.yml` restricts server selection to P2P servers,
+which are the ones that answer NAT-PMP; `SERVER_COUNTRIES` there narrows it
+further. List the eligible servers with:
+
+```sh
+docker run --rm qmcgaw/gluetun:v3.41.3 format-servers -protonvpn
+```
+
+To use OpenVPN instead of WireGuard, set `VPN_TYPE=openvpn` and supply
+`OPENVPN_USER` / `OPENVPN_PASSWORD` from
+<https://account.proton.me/u/0/vpn/OpenVpn>, with `+pmp` appended to the
+username (e.g. `myusername+pmp`) — that suffix is what enables port
+forwarding for OpenVPN sessions.
+
+The host needs the `tun` module for `/dev/net/tun` to exist. Check with
+`ls -l /dev/net/tun`; if it is missing, `sudo modprobe tun`.
+
+Verify port forwarding after starting the stack:
+
+```sh
+sudo docker logs gluetun 2>&1 | grep -i "port forward"
+# and confirm qbittorrent picked it up (same network namespace, so localhost)
+sudo docker exec gluetun wget -qO- http://127.0.0.1:8080/api/v2/app/preferences \
+  | grep -o '"listen_port":[0-9]*'
+```
+
 ### qBittorrent
+
+Peer traffic goes through ProtonVPN — see [Gluetun](#gluetun-protonvpn). The
+listening port is assigned by ProtonVPN and changes on every reconnect, so
+gluetun writes it into qBittorrent over the Web UI API at runtime.
+`QBITTORRENT_LISTENING_PORT` in `.env` is only the value the config template
+starts from before the tunnel comes up; it is never reachable from outside.
 
 Web UI login credentials live in `stacks/media/qbittorrent/secrets.enc.env`:
 
