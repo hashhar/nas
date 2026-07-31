@@ -5,6 +5,7 @@ updates:
       - "/stacks/infra/caddy"
       - "/stacks/monitoring/alertmanager"
       - "/stacks/media/gallery-dl"
+      - "/stacks/media/qbittorrent"
     schedule:
       interval: "weekly"
 

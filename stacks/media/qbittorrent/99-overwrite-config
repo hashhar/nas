@@ -5,9 +5,11 @@ set -e
 TEMPLATES=/default-config-templates
 CONFIG=/config/qBittorrent
 
-# Install envsubst (gettext package) if not already present
+# envsubst is baked into the image (see Dockerfile) rather than installed at
+# boot, so fail loudly instead of reaching for the network.
 if ! command -v envsubst &>/dev/null; then
-    apk add --no-cache gettext
+    echo "[99-overwrite-config] ERROR: envsubst missing from the image" >&2
+    exit 1
 fi
 
 mkdir -p "${CONFIG}"
