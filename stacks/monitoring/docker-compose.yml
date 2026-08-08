@@ -20,7 +20,7 @@ services:
   grafana:
     depends_on:
       - prometheus
-    image: grafana/grafana:13.1.0
+    image: grafana/grafana:13.1.2
     container_name: grafana
     volumes:
       - $DOCKER_DATA/grafana/data:/var/lib/grafana
