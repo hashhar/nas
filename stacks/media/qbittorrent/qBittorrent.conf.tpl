@@ -5,11 +5,21 @@ Session\Port=${QBITTORRENT_LISTENING_PORT}
 Session\UseRandomPort=false
 Session\Preallocation=true
 
+; Bind to gluetun's VPN interface. gluetun's firewall is the actual kill
+; switch; this is the second layer — bound to tun0, qbittorrent stops rather
+; than retrying against a blocked route while the tunnel is down or
+; reconnecting.
+Session\Interface=tun0
+Session\InterfaceName=tun0
+
 ; Seeding
 Session\GlobalMaxRatio=2
 Session\GlobalMaxSeedingMinutes=10080
 Session\GlobalMaxInactiveSeedingMinutes=10080
 Session\ShareLimitAction=Stop
+
+; Bandwidth, in KiB/s. 0 would be unlimited.
+Session\GlobalUPSpeedLimit=500
 
 ; Do not change to manual mode, relocate torrents when paths or categories change
 Session\DisableAutoTMMByDefault=false
