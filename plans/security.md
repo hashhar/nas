@@ -32,7 +32,11 @@ Explicitly out of scope, so items can be dropped deliberately rather than by
 omission:
 
 - **Internet-facing attack.** Behind CGNAT, no port forwarding, nothing
-  published.
+  published. **This is the assumption with the shortest remaining life.**
+  §1.6's VPS makes it false the day it ships, and it is load-bearing for §4.2
+  and for parts of §4.1. Treat "first public ingress" as the trigger to
+  re-run this whole threat model, not as an incremental change — anonymous
+  internet becomes adversary #1, ahead of untrusted content.
 - **LAN/IoT lateral movement.** IoT lives on its own VLAN on the UDM Pro with
   no inter-VLAN routing.
 - **Physical access and nation-state adversaries.**
@@ -140,6 +144,11 @@ everything the NAS advertises.
 
 - `group:admin` → `172.18.0.0/16:*`
 - sharees → `172.18.0.3:443` only (Caddy)
+- `tag:edge` → `172.18.0.3:443` only — the §1.6 VPS, if it ships. It must be
+  tag-owned rather than user-owned so it does not inherit `group:admin`, and
+  it must not be permitted the exit node or `192.168.0.0/22`. A rented box
+  facing the internet is the least trusted node on the tailnet and should hold
+  the narrowest grant.
 
 Live advertised routes are `0.0.0.0/0`, `::/0`, `172.18.0.0/16` and
 `192.168.0.0/22`. The first two are the exit node, documented in the README.
@@ -185,9 +194,78 @@ So the decision is not re-derived every time:
 - **Everything else** — Tailscale node sharing plus §1.2's ACLs. The cost is
   friction: each person installs Tailscale, accepts an invite, and needs
   MagicDNS working.
-- **Fallback if that friction proves too high** — a cheap VPS running the
-  public reverse proxy with a WireGuard tunnel back to the NAS. Real public
-  ingress without Cloudflare Tunnel's §2.8 TOS problem on media.
+- **Fallback if that friction proves too high** — a rented VPS carrying real
+  public ingress. Designed out in §1.6. Chosen over Cloudflare Tunnel (§2.8
+  TOS bars sustained media streaming, and the free tier caps uploads at 100 MB,
+  which breaks Immich) and over Tailscale Funnel (tailnet-owned names only).
+
+The friction is the deciding factor and it is worth stating plainly: extended
+family will not install Tailscale, and enough sharees to matter pushes the
+tailnet onto a paid plan. So §1.6 is the likely path, not the fallback.
+
+### 1.6 Public ingress via a VPS — design, if taken
+
+Not yet decided. Recorded now so the security consequences are visible before
+the decision, rather than discovered after.
+
+**Transport: a tailnet node, not WireGuard.** The subnet router already
+advertises `172.18.0.0/16`, so a VPS running `tailscale up --accept-routes`
+reaches Caddy with no new keys, no DNAT, no keepalives and no inbound port at
+home. It is also the *better* security posture, not merely the cheaper one: a
+WireGuard peer is a route into the network with no policy attached, whereas a
+tagged tailnet node is governed by §1.2's ACL. One extra device stays inside
+the free plan — sharees never join the tailnet.
+
+**Termination: SNI passthrough at the VPS (Caddy `layer4`), not L7.** The VPS
+matches on SNI, allowlists the public names, and proxies raw TLS to
+`172.18.0.3:443`. Consequences, in order of weight:
+
+1. The VPS never holds a private key and never sees plaintext. A full compromise
+   of the rented box yields a tap on ciphertext and an ACL-limited path to one
+   port — not credentials, not photos.
+2. No ACME on the VPS at all. Home Caddy's existing Cloudflare DNS-01 already
+   issues `*.nas.hashhar.com` and DNS-01 does not care where the A record
+   points.
+3. Exposure is **fail-closed**. This is the important one — see below.
+
+**The fail-open risk this design avoids.** Once public DNS points at the VPS,
+the home Caddyfile's site block serves public and private traffic through the
+same vhost; it has no notion of which services are public. Under an L7 wildcard
+proxy, adding one `import proxy-host` line silently publishes that service to
+the internet. An SNI allowlist inverts that: a new service is unreachable until
+explicitly named on the VPS. Do not replace it with a wildcard for convenience.
+
+Defence in depth on top: home Caddy should also refuse the admin vhosts
+(prometheus, grafana, qbittorrent, syncthing, restic) when the request arrives
+from the VPS peer, so exposure is denied at both ends rather than resting on one
+allowlist in a file on a rented machine.
+
+**Real client IP is a security requirement here, not a nicety.** Passthrough
+means home Caddy sees the VPS's tailnet IP as the source of every request.
+Without PROXY protocol v2 from the VPS and a matching `listener_wrappers` on
+home Caddy, three things silently break: CrowdSec/fail2ban over Caddy's logs
+have one address to work with, Immich's own login rate limiting collapses to a
+single bucket, and every access log becomes useless for incident response.
+Extending `trusted_proxies` / `IMMICH_TRUSTED_PROXIES` to the VPS peer is part
+of the same change — and it must name that peer specifically, since a broad
+trusted range makes `X-Forwarded-For` spoofable by anything else on the bridge.
+
+**Unified URLs (drops the `*.nas.ts.hashhar.com` split).** Split-horizon DNS
+serves one name set everywhere: LAN clients resolve `nas.hashhar.com` to
+`192.168.2.3`, tailnet clients to `172.18.0.3` via a Tailscale split-DNS
+override, everyone else to the VPS. The two internal answers cannot be merged —
+the subnet router runs on the Synology host and macvlan children are unreachable
+from their own parent, which is why `172.18.0.3` is pinned in the first place.
+A single CoreDNS container with one server block bound per network covers it.
+Two security notes: bind those blocks to the two interface addresses and do not
+serve recursion to anything else (no open resolver), and expect DNS rebind
+protection on the UDM to drop a public name answering with an RFC1918 address
+until `nas.hashhar.com` is whitelisted.
+
+**What this adds to the maintenance burden**, stated so it is priced in rather
+than discovered: Immich becomes internet-reachable and moves fast, so its patch
+cadence becomes yours to own. That, not container hardening, is the item most
+likely to matter first.
 
 ---
 
@@ -383,11 +461,30 @@ Downstream of §1.2 and only worth the complexity if node sharing actually
 happens — for a single-user tailnet, ACLs achieve most of the same isolation
 for far less. See `TODO.md` for the full breakdown.
 
-### 4.2 Rate limiting on Caddy — low priority
+**If §1.6 ships instead of tailnet sharing, do not let this look like the
+control that makes public ingress safe.** It is not. What keeps the admin
+services off the internet is the SNI allowlist plus the home-side `remote_ip`
+denial; Authelia sits behind both. And the two services family actually wants
+are exactly the two it cannot cover — the note above about client apps applies
+with more force publicly, since Immich's mobile app cannot complete a
+forward-auth redirect at all. Scope Authelia to browser-reachable admin
+endpoints and resist the urge to make it a universal front door, which in
+practice becomes a gate with a hand-maintained list of `/api/*` bypasses
+through it.
+
+`TODO.md` needs a matching correction: its share URLs are
+`*.nas.ts.hashhar.com`, which §1.6's unified naming removes.
+
+### 4.2 Rate limiting on Caddy — low priority *until §1.6*
 
 Add the `caddy-ratelimit` plugin and rate-limit auth endpoints. With no
 internet ingress there is no brute-force surface, so this only becomes relevant
-if something is ever exposed publicly.
+if something is ever exposed publicly — which is precisely what §1.6 does. On
+the day public ingress ships this leaves Tier 4 and becomes a Tier 1 item
+alongside it, and it depends on §1.6's PROXY-protocol work landing first: rate
+limiting keyed on a client IP that is really the VPS peer buckets every user in
+the world together and is worse than not doing it, because it reads as
+protection.
 
 ### 4.3 Conflict to fix when `plans/llm.md` executes
 
@@ -431,23 +528,41 @@ Recorded so they are not re-raised at every review.
    and direct backend IPs, DSM and SMB are not.
 6. qBittorrent's WebUI prompts for credentials from a `192.168.x` address.
 
+**Tier 1 — §1.6, only if public ingress ships**
+
+7. From an off-tailnet host, `immich.nas.hashhar.com` loads and
+   `prometheus.nas.hashhar.com` does **not** — verified twice, once with the
+   VPS allowlist in place and once with it deliberately widened, to confirm the
+   home-side `remote_ip` denial holds on its own.
+8. Home Caddy's access log shows the real client address, not the VPS peer, for
+   a request originating off-tailnet.
+9. `X-Forwarded-For` supplied by a container on `nas_bridge` is **not** honoured
+   — `trusted_proxies` names the VPS peer only.
+10. From the VPS, `172.18.0.10:6379` (Valkey), `172.18.0.3:22` and DSM are all
+    unreachable, and the exit node is unusable — the `tag:edge` grant is the
+    only path.
+11. Resolving an arbitrary external name against the CoreDNS container from
+    off-LAN fails; it is not an open resolver.
+12. One URL works on LAN, on tailnet and off-network for the same service,
+    with a valid certificate in all three cases.
+
 **Tier 2**
 
-7. `getfacl` is not used anywhere — it does not exist on DSM.
-8. On a scratch directory: `chmod 2770`, write from a container, confirm group
+13. `getfacl` is not used anywhere — it does not exist on DSM.
+14. On a scratch directory: `chmod 2770`, write from a container, confirm group
    inheritance; then re-apply DSM share permissions and confirm the directory
    is still in Linux mode.
-9. As qbittorrent, writes under `Personal/Pictures/` are denied.
-10. A file written over SMB into `Personal/Pictures/immich` lands in the right
+15. As qbittorrent, writes under `Personal/Pictures/` are denied.
+16. A file written over SMB into `Personal/Pictures/immich` lands in the right
     group and is readable by Immich.
-11. New files created by each service are group-readable.
+17. New files created by each service are group-readable.
 
 **Tier 3**
 
-12. `docker inspect --format '{{.HostConfig.SecurityOpt}} {{.HostConfig.CapDrop}}' <container>`
+18. `docker inspect --format '{{.HostConfig.SecurityOpt}} {{.HostConfig.CapDrop}}' <container>`
     reflects the anchor.
-13. Each hardened stack comes up healthy, one stack at a time.
-14. qBittorrent starts with no network access at init and renders its config
+19. Each hardened stack comes up healthy, one stack at a time.
+20. qBittorrent starts with no network access at init and renders its config
     correctly; the VPN killswitch still holds
     (`docker exec qbittorrent curl -s https://ipinfo.io/json` shows a Proton
     exit, not the home IP).
