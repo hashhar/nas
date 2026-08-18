@@ -1,0 +1,5 @@
+# Nothing in this context is COPYed into the image, but the directory holds
+# secrets and runtime-mounted config; keep them out of the build context that
+# gets shipped to the daemon.
+*
+!Dockerfile

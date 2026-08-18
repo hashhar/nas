@@ -647,6 +647,13 @@ sudo docker exec gluetun wget -qO- http://127.0.0.1:8080/api/v2/app/preferences 
 
 ### qBittorrent
 
+The image is built locally from `stacks/media/qbittorrent/Dockerfile`, which
+adds nothing but `envsubst` on top of the upstream linuxserver image — the
+startup script needs it to render `qBittorrent.conf`, and baking it in avoids
+installing a package over the VPN on every container start. The upstream
+version pin therefore lives in the Dockerfile's `FROM`, not in the compose
+file, so `up` needs `--build` after bumping it.
+
 Peer traffic goes through ProtonVPN — see [Gluetun](#gluetun-protonvpn). The
 listening port is assigned by ProtonVPN and changes on every reconnect, so
 gluetun writes it into qBittorrent over the Web UI API at runtime.

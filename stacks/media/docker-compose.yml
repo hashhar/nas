@@ -59,7 +59,11 @@ services:
     restart: unless-stopped
 
   qbittorrent:
-    image: lscr.io/linuxserver/qbittorrent:5.2.3
+    # Thin layer over the upstream image that only adds envsubst; the version
+    # pin lives in the Dockerfile's FROM.
+    build:
+      context: qbittorrent
+    image: hashhar/qbittorrent:local
     container_name: qbittorrent
     env_file:
       - qbittorrent/secrets.env
