@@ -1,2 +1,7 @@
 # per container secrets env file
 secrets.env
+
+# never commit key material in any form
+*.key
+*.pem
+*.htpasswd
