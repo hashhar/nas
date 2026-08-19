@@ -14,6 +14,15 @@ fi
 
 mkdir -p "${CONFIG}"
 
+# Each backed-up file (qBittorrent.conf, watched_folders.json,
+# categories.json) gets a fresh timestamped .bak whenever its rendered
+# content changes, uncapped. qBittorrent.conf.bak.* holds a PBKDF2 WebUI
+# password hash at 0644, so keep only the newest few.
+BACKUP_RETENTION=5
+prune_backups() {
+    ls -1t "${CONFIG}/${1}".bak.* 2>/dev/null | tail -n "+$((BACKUP_RETENTION + 1))" | xargs -r rm -f
+}
+
 # Fetch tracker lists from public sources
 # Sources: newtrackon.com (stable trackers) and ngosang/trackerslist (best trackers)
 NEWTRACKON_URL="https://newtrackon.com/api/stable?include_ipv4_only_trackers=1&include_ipv6_only_trackers=1&min_age_days=0"
@@ -64,6 +73,7 @@ for file in qBittorrent.conf watched_folders.json; do
         fi
         cp "/tmp/${file}" "${CONFIG}/${file}"
         echo "[99-overwrite-config] deployed ${file}"
+        prune_backups "${file}"
     fi
 done
 
@@ -78,6 +88,7 @@ else
     fi
     cp "${TEMPLATES}/categories.json" "${CONFIG}/categories.json"
     echo "[99-overwrite-config] deployed categories.json"
+    prune_backups categories.json
 fi
 
 rm -f /tmp/qBittorrent.conf /tmp/watched_folders.json
