@@ -52,13 +52,13 @@ http://caddy:80 {
 	# be <xyz>.nas.hashhar.com or <xyz>.nas.ts.hashhar.com but never
 	# <xyz>.foo.nas.hashhar.com due to how wildcard domains work
 	map {host} {known} {
-		~(plex)\..* "yes"
-		~(qbittorrent)\..* "yes"
-		~(syncthing)\..* "yes"
-		~(restic-rest-server)\..* "yes"
-		~(prometheus)\..* "yes"
-		~(immich)\..* "yes"
-		~(grafana)\..* "yes"
+		~^(plex)\. "yes"
+		~^(qbittorrent)\. "yes"
+		~^(syncthing)\. "yes"
+		~^(restic-rest-server)\. "yes"
+		~^(prometheus)\. "yes"
+		~^(immich)\. "yes"
+		~^(grafana)\. "yes"
 
 		default "no"
 	}
