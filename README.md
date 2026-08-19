@@ -546,6 +546,12 @@ Put the shared age private key (recipient listed in `.sops.yaml`) at
 export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
 ```
 
+`.sops.yaml` has a second recipient: an offline recovery key held only in the
+password manager, not on the NAS or any workstation. It exists so losing the
+primary key does not make every `secrets.enc.env` permanently unreadable.
+Regenerate it and `sops updatekeys` all `secrets.enc.env` files if it is ever
+used to decrypt.
+
 - **Decrypt** (before `docker compose up`):
   ```sh
   (umask 077; for f in stacks/*/*/secrets.enc.env; do sops decrypt --output "${f%.enc.env}.env" "$f"; done)
