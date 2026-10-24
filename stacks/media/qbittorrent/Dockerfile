@@ -10,7 +10,7 @@ FROM alpine:3.24 AS envsubst
 
 RUN apk add --no-cache gettext-envsubst
 
-FROM lscr.io/linuxserver/qbittorrent:5.2.3
+FROM lscr.io/linuxserver/qbittorrent:5.3.0
 
 COPY --from=envsubst /usr/bin/envsubst /usr/bin/envsubst
 # envsubst is dynamically linked against libintl; the glob pulls in both the
